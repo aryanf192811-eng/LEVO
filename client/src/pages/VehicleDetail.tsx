@@ -25,7 +25,7 @@ export default function VehicleDetail() {
   )
 
   const srvInterval = vehicle.serviceIntervalKm || 5000
-  const kmSinceSrv = vehicle.currentOdometer - (vehicle.lastServiceOdometer || 0)
+  const kmSinceSrv = (vehicle.currentOdometer || 0) - (vehicle.lastServiceOdometer || 0)
   const srvPct = Math.min(100, Math.max(0, (kmSinceSrv / srvInterval) * 100))
   const isNearLimit = (srvInterval - kmSinceSrv) <= 200
 
@@ -83,21 +83,21 @@ export default function VehicleDetail() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">ROI</p>
-          <p className={`text-xl font-bold ${vehicle.roi > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-            {vehicle.roi > 0 ? '+' : ''}{vehicle.roi.toFixed(1)}%
+          <p className={`text-xl font-bold ${(vehicle.roi || 0) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+            {(vehicle.roi || 0) > 0 ? '+' : ''}{(vehicle.roi || 0).toFixed(1)}%
           </p>
         </div>
         <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Efficiency</p>
-          <p className="text-xl font-bold text-slate-900">{vehicle.fuelEfficiency.toFixed(1)} <span className="text-sm text-slate-500">km/L</span></p>
+          <p className="text-xl font-bold text-slate-900">{(vehicle.fuelEfficiency || 0).toFixed(1)} <span className="text-sm text-slate-500">km/L</span></p>
         </div>
         <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Revenue</p>
-          <p className="text-xl font-bold text-emerald-700">{fmtCur(vehicle.totalRevenue)}</p>
+          <p className="text-xl font-bold text-emerald-700">{fmtCur(vehicle.totalRevenue || 0)}</p>
         </div>
         <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Costs</p>
-          <p className="text-xl font-bold text-red-700">{fmtCur(vehicle.totalFuelCost + vehicle.totalMaintenanceCost)}</p>
+          <p className="text-xl font-bold text-red-700">{fmtCur((vehicle.totalFuelCost || 0) + (vehicle.totalMaintenanceCost || 0))}</p>
         </div>
       </div>
 

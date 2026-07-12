@@ -43,7 +43,10 @@ export default function Settings() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Organization Settings</h1>
           <p className="text-slate-500 mt-1">Manage users, roles, and system preferences</p>
         </div>
-        <button className="h-10 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm">
+        <button 
+          onClick={() => toast.info('Invite user functionality coming soon!')}
+          className="h-10 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm"
+        >
           <UserPlus className="w-4 h-4" /> Invite User
         </button>
       </div>
