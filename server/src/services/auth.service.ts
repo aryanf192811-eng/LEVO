@@ -19,7 +19,7 @@ export const register = async (
   email: string,
   password: string,
   role: string
-): Promise<{ step: 'OTP_REQUIRED'; email: string }> => {
+): Promise<{ step: 'OTP_REQUIRED'; email: string; devOtp?: string }> => {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) throw conflict('Email already registered', 'EMAIL_TAKEN');
 
@@ -40,14 +40,18 @@ export const register = async (
 
   console.log(`\n[DEV] OTP for ${email} (Signup): ${code}\n`);
 
-  return { step: 'OTP_REQUIRED', email };
+  const response: any = { step: 'OTP_REQUIRED', email };
+  if (process.env.NODE_ENV !== 'production') {
+    response.devOtp = code;
+  }
+  return response;
 };
 
 // ── login ─────────────────────────────────────────────────────────────────────
 export const login = async (
   email: string,
   password: string,
-): Promise<{ step: 'OTP_REQUIRED'; email: string }> => {
+): Promise<{ step: 'OTP_REQUIRED'; email: string; devOtp?: string }> => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw unauthorized('Invalid email or password');
 
@@ -66,7 +70,11 @@ export const login = async (
   // CRITICAL: OTP is ONLY exposed here — never returned in the HTTP response
   console.log(`\n[DEV] OTP for ${email}: ${code}\n`);
 
-  return { step: 'OTP_REQUIRED', email };
+  const response: any = { step: 'OTP_REQUIRED', email };
+  if (process.env.NODE_ENV !== 'production') {
+    response.devOtp = code;
+  }
+  return response;
 };
 
 // ── verifyOTP ─────────────────────────────────────────────────────────────────

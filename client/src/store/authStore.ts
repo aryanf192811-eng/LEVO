@@ -29,9 +29,12 @@ pendingOtpEmail: null,
   register: async (name, email, password, role) => {
     set({ isLoading: true })
     try {
-      const data = await api.post<{ step: string; email: string }>(
+      const data = await api.post<{ step: string; email: string; devOtp?: string }>(
         '/auth/register', { name, email, password, role }
       )
+      if (data.devOtp) {
+        console.warn(`[DEV ONLY] Your OTP is: ${data.devOtp}`);
+      }
       set({ pendingOtpEmail: data.email, isLoading: false })
       return { email: data.email }
     } catch (err) {
@@ -43,9 +46,12 @@ pendingOtpEmail: null,
   login: async (email, password) => {
     set({ isLoading: true })
     try {
-      const data = await api.post<{ step: string; email: string }>(
+      const data = await api.post<{ step: string; email: string; devOtp?: string }>(
         '/auth/login', { email, password }
       )
+      if (data.devOtp) {
+        console.warn(`[DEV ONLY] Your OTP is: ${data.devOtp}`);
+      }
       set({ pendingOtpEmail: data.email, isLoading: false })
       return { email: data.email }
     } catch (err) {
