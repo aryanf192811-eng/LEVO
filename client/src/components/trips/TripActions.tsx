@@ -52,6 +52,9 @@ export default function TripActions({ trip }: TripActionsProps) {
     )
   }
 
+  const isTripDetailPage = window.location.pathname === `/trips/${trip.id}`
+  if (isTripDetailPage) return null
+
   return (
     <Link to={`/trips/${trip.id}`} className="text-xs font-medium text-slate-500 hover:text-slate-900 underline underline-offset-2">
       View

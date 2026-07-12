@@ -6,6 +6,19 @@ content: ['./index.html', './src/**/*.{ts,tsx}'],
 theme: {
 extend: {
 colors: {
+white: 'var(--tw-white, #ffffff)',
+slate: {
+50: 'var(--tw-slate-50)',
+100: 'var(--tw-slate-100)',
+200: 'var(--tw-slate-200)',
+300: 'var(--tw-slate-300)',
+400: 'var(--tw-slate-400)',
+500: 'var(--tw-slate-500)',
+600: 'var(--tw-slate-600)',
+700: 'var(--tw-slate-700)',
+800: 'var(--tw-slate-800)',
+900: 'var(--tw-slate-900)',
+},
 // These will be replaced by Stitch output. Default is clean neutral SaaS palette.
 brand: {
 50:  '#fef9ee',

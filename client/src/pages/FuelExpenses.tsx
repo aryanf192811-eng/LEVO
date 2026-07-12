@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { useFuelLogs, useExpenses } from '@/api/hooks/useFinancial'
+import * as Dialog from '@radix-ui/react-dialog'
+import { useFuelLogs, useExpenses, useCreateFuelLog, useCreateExpense } from '@/api/hooks/useFinancial'
+import { useVehicles } from '@/api/hooks/useVehicles'
 import { fmtDate, fmtCurrency } from '@/lib/utils'
 
 export default function FuelExpenses() {
+  const [fuelOpen, setFuelOpen] = useState(false)
+  const [expenseOpen, setExpenseOpen] = useState(false)
+
   const { data: fuelLogs = [], isLoading: loadFuel } = useFuelLogs()
   const { data: expenses = [], isLoading: loadExp } = useExpenses()
   
@@ -31,7 +36,7 @@ export default function FuelExpenses() {
         <div>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Fuel Logs</h2>
-            <button className="text-sm font-medium text-amber-600 hover:text-amber-700 flex items-center gap-1"><Plus className="w-4 h-4"/> Log Fuel</button>
+            <button onClick={() => setFuelOpen(true)} className="text-sm font-medium text-amber-600 hover:text-amber-700 flex items-center gap-1"><Plus className="w-4 h-4"/> Log Fuel</button>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <table className="w-full text-sm text-left whitespace-nowrap">
@@ -63,7 +68,7 @@ export default function FuelExpenses() {
         <div>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Other Expenses</h2>
-            <button className="text-sm font-medium text-amber-600 hover:text-amber-700 flex items-center gap-1"><Plus className="w-4 h-4"/> Add Expense</button>
+            <button onClick={() => setExpenseOpen(true)} className="text-sm font-medium text-amber-600 hover:text-amber-700 flex items-center gap-1"><Plus className="w-4 h-4"/> Add Expense</button>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <table className="w-full text-sm text-left whitespace-nowrap">
@@ -109,6 +114,149 @@ export default function FuelExpenses() {
           Export CSV
         </a>
       </div>
+      
+      <LogFuelModal open={fuelOpen} onClose={() => setFuelOpen(false)} />
+      <AddExpenseModal open={expenseOpen} onClose={() => setExpenseOpen(false)} />
     </div>
+  )
+}
+
+function LogFuelModal({ open, onClose }: { open: boolean, onClose: () => void }) {
+  const { data: vehicles = [] } = useVehicles()
+  const createFuel = useCreateFuelLog()
+
+  const [vehicleId, setVehicleId] = useState('')
+  const [litres, setLitres] = useState('')
+  const [costPerLitre, setCostPerLitre] = useState('')
+  const [odometerReading, setOdometerReading] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 16))
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await createFuel.mutateAsync({
+        vehicleId: Number(vehicleId),
+        litres: Number(litres),
+        costPerLitre: Number(costPerLitre),
+        odometerReading: Number(odometerReading),
+        date: new Date(date).toISOString()
+      })
+      onClose()
+    } catch (err: any) {
+      alert(err.message || 'Error logging fuel')
+    }
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onClose}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40 animate-in fade-in" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl w-full max-w-md z-50 p-6">
+          <Dialog.Title className="text-lg font-semibold mb-4">Log Fuel</Dialog.Title>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[13px] font-medium text-slate-700 mb-1">Vehicle</label>
+              <select required value={vehicleId} onChange={e => setVehicleId(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-amber-500">
+                <option value="">Select vehicle...</option>
+                {vehicles.map(v => <option key={v.id} value={v.id}>{v.regNumber}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[13px] font-medium text-slate-700 mb-1">Litres</label>
+                <input type="number" step="0.1" required value={litres} onChange={e => setLitres(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-amber-500" />
+              </div>
+              <div>
+                <label className="block text-[13px] font-medium text-slate-700 mb-1">Cost / Litre</label>
+                <input type="number" step="0.01" required value={costPerLitre} onChange={e => setCostPerLitre(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-amber-500" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-slate-700 mb-1">Odometer</label>
+              <input type="number" required value={odometerReading} onChange={e => setOdometerReading(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-slate-700 mb-1">Date</label>
+              <input type="datetime-local" required value={date} onChange={e => setDate(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-amber-500" />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-md">Cancel</button>
+              <button type="submit" disabled={createFuel.isPending} className="px-4 py-2 text-sm text-white bg-amber-600 hover:bg-amber-700 rounded-md font-medium">Log Fuel</button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  )
+}
+
+function AddExpenseModal({ open, onClose }: { open: boolean, onClose: () => void }) {
+  const { data: vehicles = [] } = useVehicles()
+  const createExpense = useCreateExpense()
+
+  const [vehicleId, setVehicleId] = useState('')
+  const [type, setType] = useState('Toll')
+  const [amount, setAmount] = useState('')
+  const [description, setDescription] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 16))
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await createExpense.mutateAsync({
+        vehicleId: Number(vehicleId),
+        type,
+        amount: Number(amount),
+        description,
+        date: new Date(date).toISOString()
+      })
+      onClose()
+    } catch (err: any) {
+      alert(err.message || 'Error adding expense')
+    }
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onClose}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40 animate-in fade-in" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl w-full max-w-md z-50 p-6">
+          <Dialog.Title className="text-lg font-semibold mb-4">Add Expense</Dialog.Title>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[13px] font-medium text-slate-700 mb-1">Vehicle</label>
+              <select required value={vehicleId} onChange={e => setVehicleId(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-amber-500">
+                <option value="">Select vehicle...</option>
+                {vehicles.map(v => <option key={v.id} value={v.id}>{v.regNumber}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[13px] font-medium text-slate-700 mb-1">Type</label>
+                <select required value={type} onChange={e => setType(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-amber-500">
+                  {['Toll', 'Parking', 'Fine', 'Loading', 'Unloading', 'Other'].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[13px] font-medium text-slate-700 mb-1">Amount (₹)</label>
+                <input type="number" step="0.01" required value={amount} onChange={e => setAmount(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-amber-500" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-slate-700 mb-1">Description (Optional)</label>
+              <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label className="block text-[13px] font-medium text-slate-700 mb-1">Date</label>
+              <input type="datetime-local" required value={date} onChange={e => setDate(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-amber-500" />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-md">Cancel</button>
+              <button type="submit" disabled={createExpense.isPending} className="px-4 py-2 text-sm text-white bg-amber-600 hover:bg-amber-700 rounded-md font-medium">Add Expense</button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
