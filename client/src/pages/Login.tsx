@@ -154,7 +154,13 @@ export default function Login() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="text-[13px] font-medium text-slate-700">Password</label>
-                    <a href="#" className="text-amber-600 text-[13px] font-medium hover:text-amber-700">Forgot password?</a>
+                    <button 
+                      type="button" 
+                      onClick={(e) => { e.preventDefault(); setErrorMsg('Password reset is disabled in the demo environment. Please contact your system administrator.') }} 
+                      className="text-amber-600 text-[13px] font-medium hover:text-amber-700"
+                    >
+                      Forgot password?
+                    </button>
                   </div>
                   <input 
                     type="password" 
