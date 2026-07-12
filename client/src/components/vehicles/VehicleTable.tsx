@@ -1,44 +1,37 @@
-import { MoreHorizontal, Truck, Plus } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Vehicle } from '@/types'
 import { Link, useNavigate } from 'react-router-dom'
 import { statusToBadge } from '@/lib/utils'
+import { TableSkeleton } from '@/components/common/LoadingSkeleton'
+import { EmptyVehicles } from '@/components/common/EmptyState'
 
 interface VehicleTableProps {
   vehicles: Vehicle[]
   isLoading: boolean
   onEdit: (v: Vehicle) => void
   onDelete: (id: number) => void
+  onAdd?: () => void
 }
 
 const fmtNumber = (num: number, decimals = 0) => num.toLocaleString('en-IN', { maximumFractionDigits: decimals })
 const fmtCurrency = (num: number) => '₹' + num.toLocaleString('en-IN')
 
-export default function VehicleTable({ vehicles, isLoading, onEdit, onDelete }: VehicleTableProps) {
+export default function VehicleTable({ vehicles, isLoading, onEdit, onDelete, onAdd }: VehicleTableProps) {
   const navigate = useNavigate()
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden w-full">
-        <div className="space-y-4 p-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="flex gap-4 animate-pulse">
-              <div className="h-10 bg-slate-100 rounded flex-1" />
-            </div>
-          ))}
-        </div>
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden w-full">
+        <TableSkeleton rows={5} cols={8} />
       </div>
     )
   }
 
   if (vehicles.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-12 flex flex-col items-center justify-center text-center">
-        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-          <Truck className="w-6 h-6 text-slate-400" />
-        </div>
-        <h3 className="text-lg font-medium text-slate-900 mb-1">No vehicles found</h3>
-        <p className="text-slate-500 mb-4">Add your first vehicle or adjust filters.</p>
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
+        <EmptyVehicles onAdd={onAdd} />
       </div>
     )
   }

@@ -7,8 +7,7 @@ interface VehicleROIItem {
   vehicleName: string
   acquisitionCost: number
   totalRevenue: number
-  totalMaintenanceCost: number
-  totalFuelCost: number
+  totalCost: number
   roi: number
 }
 
@@ -27,7 +26,7 @@ export default function ROITable({ data }: { data: VehicleROIItem[] }) {
   const totals = sortedData.reduce((acc, row) => {
     acc.acquisition += row.acquisitionCost
     acc.revenue += row.totalRevenue
-    acc.costs += row.totalMaintenanceCost + row.totalFuelCost
+    acc.costs += row.totalCost
     return acc
   }, { acquisition: 0, revenue: 0, costs: 0 })
 
@@ -71,7 +70,7 @@ export default function ROITable({ data }: { data: VehicleROIItem[] }) {
                 </td>
                 <td className="px-4 py-3 text-right text-slate-500">{fmtCurrency(row.acquisitionCost)}</td>
                 <td className="px-4 py-3 text-right text-emerald-700 font-medium">{fmtCurrency(row.totalRevenue)}</td>
-                <td className="px-4 py-3 text-right text-amber-700 font-medium">{fmtCurrency(row.totalMaintenanceCost + row.totalFuelCost)}</td>
+                <td className="px-4 py-3 text-right text-amber-700 font-medium">{fmtCurrency(row.totalCost)}</td>
                 <td className={`px-4 py-3 text-right ${getRoiClass(row.roi)}`}>
                   {row.roi > 0 ? '+' : ''}{row.roi.toFixed(1)}%
                 </td>

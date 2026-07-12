@@ -65,9 +65,9 @@ export default function VehicleForm({ open, onClose, vehicle }: VehicleFormProps
   const onSubmit = async (data: FormData) => {
     try {
       if (isEdit) {
-        await updateMutation.mutateAsync(data)
+        await updateMutation.mutateAsync(data as any)
       } else {
-        await createMutation.mutateAsync(data)
+        await createMutation.mutateAsync(data as any)
       }
       onClose()
       // Note: toast success ideally goes here

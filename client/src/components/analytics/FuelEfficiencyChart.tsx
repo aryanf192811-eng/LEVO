@@ -5,7 +5,7 @@ import { CloudOff } from 'lucide-react'
 interface FuelEfficiencyItem {
   vehicleId: number
   vehicleName: string
-  totalDistance: number
+  totalDistanceKm: number
   totalLitres: number
   efficiencyKmPerLitre: number
 }
@@ -40,7 +40,7 @@ export default function FuelEfficiencyChart({ data }: { data: FuelEfficiencyItem
             <span className="font-semibold text-slate-900">{p.efficiencyKmPerLitre.toFixed(1)} km/L</span>
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            ({p.totalDistance.toFixed(0)} km / {p.totalLitres.toFixed(0)} L)
+            ({p.totalDistanceKm.toFixed(0)} km / {p.totalLitres.toFixed(0)} L)
           </p>
         </div>
       )

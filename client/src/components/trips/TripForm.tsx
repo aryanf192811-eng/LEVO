@@ -4,8 +4,9 @@ import { X, Loader2, MapPin } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useDispatchableVehicles, useDispatchableDrivers, useCreateTrip } from '@/api/hooks/useTrips'
-import { useWeatherAssessment } from '@/api/hooks/useTrips'
+import { useCreateTrip, useWeatherAssessment } from '@/api/hooks/useTrips'
+import { useVehicles } from '@/api/hooks/useVehicles'
+import { useDrivers } from '@/api/hooks/useDrivers'
 import WeatherPanel from '@/components/trips/WeatherPanel'
 import { getErrorMessage, fmtDate } from '@/lib/utils'
 
@@ -27,8 +28,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 export default function TripForm({ open, onClose }: TripFormProps) {
-  const { data: vehicles = [] } = useDispatchableVehicles()
-  const { data: drivers = [] } = useDispatchableDrivers()
+  const { data: vehicles = [] } = useVehicles({ status: 'AVAILABLE' })
+  const { data: drivers = [] } = useDrivers({ status: 'AVAILABLE' })
   const createMutation = useCreateTrip()
 
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>({

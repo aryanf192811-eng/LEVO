@@ -12,11 +12,11 @@ export default function CompliancePanel({ expiring = [], suspended = [], leaderb
   const expiringDrivers = expiring.length ? expiring : [
     { id: '1', name: 'Dev Malhotra', licenseCategory: 'CDL-A', licenseExpiry: new Date(Date.now() + 5 * 86400000).toISOString() }, // 5 days
     { id: '2', name: 'John Doe', licenseCategory: 'Class B', licenseExpiry: new Date(Date.now() + 20 * 86400000).toISOString() }, // 20 days
-  ] as Driver[]
+  ] as any
 
   const suspendedDrivers = suspended.length ? suspended : [
     { id: '3', name: 'Mike Smith', status: 'SUSPENDED' }
-  ] as Driver[]
+  ] as any
 
   const getDaysUntil = (dateStr: string) => {
     const diffTime = Math.abs(new Date(dateStr).getTime() - Date.now())

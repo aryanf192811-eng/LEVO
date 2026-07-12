@@ -6,6 +6,7 @@ import CompliancePanel from '@/components/dashboard/CompliancePanel'
 import { Truck, CheckCircle2, Navigation, Activity, Users, AlertTriangle, Plus, ArrowRight } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { statusToBadge } from '@/lib/utils'
+import { LiveIndicator } from '@/components/common/LoadingSkeleton'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
@@ -21,9 +22,8 @@ export default function Dashboard() {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-slate-900">Platform Metrics</h2>
-          <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Live • updates every 8s
+          <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/50">
+            <LiveIndicator />
           </div>
         </div>
         

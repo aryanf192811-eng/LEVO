@@ -4,6 +4,7 @@ import { useVehicleDetail } from '@/api/hooks/useVehicles'
 import { useAuthStore } from '@/store/authStore'
 import { ArrowLeft, Truck, Edit, AlertTriangle } from 'lucide-react'
 import { statusToBadge } from '@/lib/utils'
+import { DetailSkeleton } from '@/components/common/LoadingSkeleton'
 
 const fmtNum = (n?: number) => n?.toLocaleString('en-IN') ?? '-'
 const fmtCur = (n?: number) => n ? '₹' + n.toLocaleString('en-IN') : '-'
@@ -15,7 +16,7 @@ export default function VehicleDetail() {
   const { data: vehicle, isLoading } = useVehicleDetail(Number(id))
   const [activeTab, setActiveTab] = useState<'trips'|'maintenance'|'fuel'|'expenses'>('trips')
 
-  if (isLoading) return <div className="p-8 animate-pulse text-slate-400">Loading details...</div>
+  if (isLoading) return <DetailSkeleton />
   if (!vehicle) return (
     <div className="p-8">
       <h2 className="text-xl font-semibold mb-4">Vehicle not found</h2>
@@ -96,7 +97,7 @@ export default function VehicleDetail() {
         </div>
         <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Costs</p>
-          <p className="text-xl font-bold text-red-700">{fmtCur(vehicle.totalCosts)}</p>
+          <p className="text-xl font-bold text-red-700">{fmtCur(vehicle.totalFuelCost + vehicle.totalMaintenanceCost)}</p>
         </div>
       </div>
 

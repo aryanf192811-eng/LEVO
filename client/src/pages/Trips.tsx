@@ -5,6 +5,8 @@ import { useAuthStore } from '@/store/authStore'
 import TripForm from '@/components/trips/TripForm'
 import TripActions from '@/components/trips/TripActions'
 import { statusToBadge, fmtDateRelative } from '@/lib/utils'
+import { TableSkeleton, LiveIndicator } from '@/components/common/LoadingSkeleton'
+import { EmptyTrips } from '@/components/common/EmptyState'
 
 type TripStatusTab = 'ALL' | 'DRAFT' | 'DISPATCHED' | 'COMPLETED' | 'CANCELLED'
 const TABS: TripStatusTab[] = ['ALL', 'DRAFT', 'DISPATCHED', 'COMPLETED', 'CANCELLED']
@@ -34,7 +36,10 @@ export default function Trips() {
     <div className="max-w-[1400px] mx-auto animate-in fade-in duration-500 pb-12">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Trips & Dispatch</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight dark:text-slate-100">Trips & Dispatch</h1>
+            <LiveIndicator />
+          </div>
           <p className="text-slate-500 mt-1">Manage active routes and cargo</p>
         </div>
         {canCreate && (
@@ -45,19 +50,19 @@ export default function Trips() {
       </div>
 
       {/* STATUS TABS */}
-      <div className="flex border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6 overflow-x-auto no-scrollbar">
         {TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex items-center gap-2 pb-3 px-1 mr-8 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
               activeTab === tab 
-                ? 'border-amber-500 text-slate-900' 
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-amber-500 text-slate-900 dark:text-slate-100' 
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-300'
             }`}
           >
             {tab.charAt(0) + tab.slice(1).toLowerCase()}
-            <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === tab ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === tab ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-500' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
               {counts[tab]}
             </span>
           </button>
@@ -65,12 +70,12 @@ export default function Trips() {
       </div>
 
       {/* TRIP CARDS / LIST */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {isLoading && <div className="p-8 text-center text-slate-500 animate-pulse">Loading trips...</div>}
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+        {isLoading && <TableSkeleton rows={5} cols={6} />}
         {!isLoading && filteredTrips.length === 0 && (
-          <div className="p-12 text-center text-slate-500">
-            No trips found in this view.
-          </div>
+          activeTab === 'ALL' 
+            ? <EmptyTrips onAdd={canCreate ? () => setShowCreateForm(true) : undefined} />
+            : <EmptyTrips filtered />
         )}
         {!isLoading && filteredTrips.length > 0 && (
           <div className="divide-y divide-slate-100">

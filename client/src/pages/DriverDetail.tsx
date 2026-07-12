@@ -32,7 +32,7 @@ export default function DriverDetail() {
     const events = [...driver.safetyEvents].reverse() // chronological
     const chartData = events.map(e => {
       const point = { date: new Date(e.createdAt).toLocaleDateString(), score: currentScore, reason: e.reason }
-      currentScore -= e.scoreDelta
+      currentScore -= e.delta
       return point
     }).reverse() // back to chronological for chart
     return chartData
@@ -133,8 +133,8 @@ export default function DriverDetail() {
             <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
               {driver.safetyEvents?.map(e => (
                 <div key={e.id} className="p-3 bg-slate-50 border border-slate-100 rounded-lg flex items-start gap-3">
-                  <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${e.scoreDelta > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}>
-                    {e.scoreDelta > 0 ? '+' : ''}{e.scoreDelta}
+                  <div className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${e.delta > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                    {e.delta > 0 ? '+' : ''}{e.delta}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-slate-900 leading-snug">{e.reason}</p>

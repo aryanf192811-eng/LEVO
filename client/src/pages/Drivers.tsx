@@ -7,6 +7,8 @@ import { useDrivers, useExpiringDrivers, useSuspendDriver, useReinstateDriver } 
 import DriverForm from '@/components/drivers/DriverForm'
 import { Driver } from '@/types'
 import { statusToBadge, licenseExpiryClass } from '@/lib/utils'
+import { TableSkeleton } from '@/components/common/LoadingSkeleton'
+import { EmptyDrivers } from '@/components/common/EmptyState'
 
 export default function Drivers() {
   const user = useAuthStore(s => s.user)
@@ -121,45 +123,39 @@ export default function Drivers() {
         </select>
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden w-full">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Driver</th>
-                <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">License #</th>
-                <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Category</th>
-                <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Expiry</th>
-                <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Safety Score</th>
-                <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Status</th>
-                <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
-                [...Array(5)].map((_, i) => (
-                  <tr key={i} className="h-16 animate-pulse">
-                    <td colSpan={7} className="px-6"><div className="h-8 bg-slate-100 rounded w-full"></div></td>
-                  </tr>
-                ))
-              ) : drivers.length === 0 ? (
+      {/* CONTENT */}
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden w-full">
+        {isLoading ? (
+          <TableSkeleton rows={5} cols={7} />
+        ) : drivers.length === 0 ? (
+          <EmptyDrivers onAdd={canEdit ? () => { setEditingDriver(undefined); setShowForm(true) } : undefined} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left whitespace-nowrap">
+              <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">No drivers found.</td>
+                  <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Driver</th>
+                  <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">License #</th>
+                  <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Category</th>
+                  <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Expiry</th>
+                  <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Safety Score</th>
+                  <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider">Status</th>
+                  <th className="px-6 py-3 font-semibold uppercase text-[12px] tracking-wider text-right">Actions</th>
                 </tr>
-              ) : (
-                drivers.map(d => {
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {drivers.map(d => {
                   const barColorClass = d.safetyScore > 70 ? 'bg-emerald-500' : d.safetyScore > 40 ? 'bg-amber-500' : 'bg-red-500'
                   return (
-                    <tr key={d.id} className="hover:bg-slate-50 transition-colors group h-16">
+                    <tr key={d.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group h-16">
                       <td className="px-6 py-3 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold shrink-0">
                           {d.name.substring(0,2).toUpperCase()}
                         </div>
-                        <span className="font-medium text-slate-900">{d.name}</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{d.name}</span>
                       </td>
-                      <td className="px-6 py-3 text-slate-600">{d.licenseNumber}</td>
-                      <td className="px-6 py-3 text-slate-500">{d.licenseCategory}</td>
+                      <td className="px-6 py-3 text-slate-600 dark:text-slate-400">{d.licenseNumber}</td>
+                      <td className="px-6 py-3 text-slate-500 dark:text-slate-500">{d.licenseCategory}</td>
                       <td className="px-6 py-3">
                         <span className={`text-[13px] font-medium ${licenseExpiryClass(d.licenseExpiry)}`}>
                           {new Date(d.licenseExpiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -167,10 +163,10 @@ export default function Drivers() {
                       </td>
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-3 w-32">
-                          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div className={`h-full ${barColorClass}`} style={{ width: `${d.safetyScore}%` }} />
                           </div>
-                          <span className="text-xs font-semibold text-slate-600 w-6">{d.safetyScore}</span>
+                          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 w-6">{d.safetyScore}</span>
                         </div>
                       </td>
                       <td className="px-6 py-3">
@@ -182,26 +178,26 @@ export default function Drivers() {
                         {canEdit && (
                           <DropdownMenu.Root>
                             <DropdownMenu.Trigger asChild>
-                              <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-all outline-none">
+                              <button className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all outline-none">
                                 <MoreHorizontal className="w-5 h-5" />
                               </button>
                             </DropdownMenu.Trigger>
                             <DropdownMenu.Portal>
-                              <DropdownMenu.Content align="end" className="w-40 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50 p-1">
-                                <DropdownMenu.Item onSelect={() => navigate(`/drivers/${d.id}`)} className="px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-amber-600 rounded cursor-pointer outline-none">
+                              <DropdownMenu.Content align="end" className="w-40 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-50 p-1">
+                                <DropdownMenu.Item onSelect={() => navigate(`/drivers/${d.id}`)} className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-amber-600 dark:hover:text-amber-500 rounded cursor-pointer outline-none">
                                   View Details
                                 </DropdownMenu.Item>
-                                <DropdownMenu.Item onSelect={() => { setEditingDriver(d); setShowForm(true) }} className="px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded cursor-pointer outline-none">
+                                <DropdownMenu.Item onSelect={() => { setEditingDriver(d); setShowForm(true) }} className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded cursor-pointer outline-none">
                                   Edit Driver
                                 </DropdownMenu.Item>
-                                <DropdownMenu.Separator className="h-px bg-slate-100 my-1" />
+                                <DropdownMenu.Separator className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
                                 {d.status === 'AVAILABLE' && (
-                                  <DropdownMenu.Item onSelect={() => handleSuspend(d)} className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer outline-none font-medium">
+                                  <DropdownMenu.Item onSelect={() => handleSuspend(d)} className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded cursor-pointer outline-none font-medium">
                                     Suspend
                                   </DropdownMenu.Item>
                                 )}
                                 {d.status === 'SUSPENDED' && (
-                                  <DropdownMenu.Item onSelect={() => handleReinstate(d)} className="px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded cursor-pointer outline-none font-medium">
+                                  <DropdownMenu.Item onSelect={() => handleReinstate(d)} className="px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded cursor-pointer outline-none font-medium">
                                     Reinstate
                                   </DropdownMenu.Item>
                                 )}
@@ -212,11 +208,11 @@ export default function Drivers() {
                       </td>
                     </tr>
                   )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <DriverForm open={showForm} onClose={() => setShowForm(false)} driver={editingDriver} />

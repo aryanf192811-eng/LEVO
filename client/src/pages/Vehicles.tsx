@@ -117,6 +117,7 @@ export default function Vehicles() {
         isLoading={isLoading} 
         onEdit={(v) => { setEditingVehicle(v); setShowForm(true); }}
         onDelete={(id) => deleteMutation.mutate(id)}
+        onAdd={user?.role === 'FLEET_MANAGER' ? () => { setEditingVehicle(undefined); setShowForm(true) } : undefined}
       />
 
       {/* FORM MODAL */}
