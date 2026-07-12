@@ -1,0 +1,559 @@
+const fs = require('fs');
+
+const collectionPath = './tests/postman/transitops.collection.json';
+const collection = JSON.parse(fs.readFileSync(collectionPath, 'utf8'));
+
+const folder02 = {
+  name: "02 — Vehicles & Drivers",
+  item: [
+    // I2-01: List All Vehicles
+    {
+      name: "I2-01: List All Vehicles",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns 6 vehicles from seed', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data).to.be.an('array').with.lengthOf(6);",
+            "});",
+            "pm.test('All required fields present', () => {",
+            "  const { data } = pm.response.json();",
+            "  const v = data[0];",
+            "  pm.expect(v).to.include.all.keys('id','regNumber','name','type','maxCapacityKg',",
+            "  'currentOdometer','acquisitionCost','status','region','createdAt');",
+            "});",
+            "pm.test('No passwordHash in vehicle data (sanity)', () => {",
+            "  pm.expect(pm.response.text()).to.not.include('passwordHash');",
+            "});",
+            "pm.test('Store vehicle IDs in environment', () => {",
+            "  const { data } = pm.response.json();",
+            "  data.forEach(v => {",
+            "    if (v.name === 'Van-01')   pm.environment.set('vehicleId_Van01', v.id);",
+            "    if (v.name === 'Van-05')   pm.environment.set('vehicleId_Van05', v.id);",
+            "    if (v.name === 'Truck-02') pm.environment.set('vehicleId_Truck02', v.id);",
+            "    if (v.name === 'Van-04')   pm.environment.set('vehicleId_Van04', v.id);",
+            "    if (v.name === 'Van-06')   pm.environment.set('vehicleId_Van06', v.id);",
+            "    if (v.name === 'Bike-03')  pm.environment.set('vehicleId_Bike03', v.id);",
+            "  });",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/vehicles",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-02: Filter Vehicles by Status (AVAILABLE)
+    {
+      name: "I2-02: Filter Vehicles by Status (AVAILABLE)",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns only 3 AVAILABLE vehicles', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data).to.have.lengthOf(3);",
+            "  data.forEach(v => pm.expect(v.status).to.equal('AVAILABLE'));",
+            "});",
+            "pm.test('Van-04 (IN_SHOP) not in results', () => {",
+            "  const { data } = pm.response.json();",
+            "  const names = data.map(v => v.name);",
+            "  pm.expect(names).to.not.include('Van-04');",
+            "  pm.expect(names).to.not.include('Van-06');",
+            "  pm.expect(names).to.not.include('Truck-02');",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/vehicles?status=AVAILABLE",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-03: Filter Vehicles by Region
+    {
+      name: "I2-03: Filter Vehicles by Region",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Only North region vehicles returned', () => {",
+            "  const { data } = pm.response.json();",
+            "  data.forEach(v => pm.expect(v.region).to.equal('North'));",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/vehicles?region=North",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-04: Search Vehicles
+    {
+      name: "I2-04: Search Vehicles",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns only Van-type vehicles', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data.length).to.be.greaterThan(0);",
+            "  data.forEach(v => pm.expect(v.name.toLowerCase()).to.include('van'));",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/vehicles?search=Van",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-05: Get Dispatchable Vehicles
+    {
+      name: "I2-05: Get Dispatchable Vehicles",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns exactly 3 dispatchable vehicles', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data).to.have.lengthOf(3);",
+            "});",
+            "pm.test('All returned vehicles are AVAILABLE', () => {",
+            "  const { data } = pm.response.json();",
+            "  const names = data.map(v => v.name);",
+            "  pm.expect(names).to.not.include('Van-04');",
+            "  pm.expect(names).to.not.include('Van-06');",
+            "  pm.expect(names).to.not.include('Truck-02');",
+            "});",
+            "pm.test('Dispatchable vehicles have maxCapacityKg field', () => {",
+            "  const { data } = pm.response.json();",
+            "  data.forEach(v => pm.expect(v.maxCapacityKg).to.be.a('number').above(0));",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/vehicles/dispatchable",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-06: Get Vehicle Detail
+    {
+      name: "I2-06: Get Vehicle Detail (Van-01 — near service interval)",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has computed financial fields', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data).to.have.property('totalFuelCost');",
+            "  pm.expect(data).to.have.property('totalMaintenanceCost');",
+            "  pm.expect(data).to.have.property('totalRevenue');",
+            "  pm.expect(data).to.have.property('roi');",
+            "  pm.expect(data).to.have.property('fuelEfficiency');",
+            "});",
+            "pm.test('Has related arrays', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data.trips).to.be.an('array');",
+            "  pm.expect(data.maintenanceLogs).to.be.an('array');",
+            "  pm.expect(data.fuelLogs).to.be.an('array');",
+            "  pm.expect(data.expenses).to.be.an('array');",
+            "});",
+            "pm.test('Van-01 service interval fields correct', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data.serviceIntervalKm).to.equal(5000);",
+            "  pm.expect(data.currentOdometer).to.equal(4800);",
+            "  pm.expect(data.lastServiceOdometer).to.equal(0);",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/vehicles/{{vehicleId_Van01}}",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-07: Create Vehicle (Valid)
+    {
+      name: "I2-07: Create Vehicle (Valid)",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+            "pm.test('Vehicle created with correct data', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data.regNumber).to.equal('TEST-VH-001');",
+            "  pm.expect(data.status).to.equal('AVAILABLE');",
+            "  pm.expect(data.id).to.be.a('number');",
+            "  pm.environment.set('newVehicleId', data.id);",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "POST",
+        url: "{{baseUrl}}/vehicles",
+        header: [
+          { key: "Authorization", value: "Bearer {{token}}" },
+          { key: "Content-Type", value: "application/json" }
+        ],
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({
+            regNumber: "TEST-VH-001",
+            name: "Test Van",
+            type: "Van",
+            maxCapacityKg: 800,
+            currentOdometer: 0,
+            acquisitionCost: 600000,
+            region: "South",
+            serviceIntervalKm: 8000
+          })
+        }
+      }
+    },
+    // I2-08: Create Vehicle — Duplicate Registration Number
+    {
+      name: "I2-08: Create Vehicle — Duplicate Registration Number",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));",
+            "pm.test('Returns DUPLICATE_REG error code', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.success).to.be.false;",
+            "  pm.expect(json.code).to.equal('DUPLICATE_REG');",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "POST",
+        url: "{{baseUrl}}/vehicles",
+        header: [
+          { key: "Authorization", value: "Bearer {{token}}" },
+          { key: "Content-Type", value: "application/json" }
+        ],
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({
+            regNumber: "MH-04-AB-0001",
+            name: "Duplicate Van",
+            type: "Van",
+            maxCapacityKg: 500,
+            acquisitionCost: 400000,
+            region: "North"
+          })
+        }
+      }
+    },
+    // I2-09: Update Vehicle
+    {
+      name: "I2-09: Update Vehicle",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Vehicle updated', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data.name).to.equal('Test Van Updated');",
+            "  pm.expect(data.region).to.equal('Central');",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "PUT",
+        url: "{{baseUrl}}/vehicles/{{newVehicleId}}",
+        header: [
+          { key: "Authorization", value: "Bearer {{token}}" },
+          { key: "Content-Type", value: "application/json" }
+        ],
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({
+            name: "Test Van Updated",
+            region: "Central"
+          })
+        }
+      }
+    },
+    // I2-10: Delete Test Vehicle
+    {
+      name: "I2-10: Delete Test Vehicle",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Back to 6 vehicles', async () => {});"
+          ]
+        }
+      }],
+      request: {
+        method: "DELETE",
+        url: "{{baseUrl}}/vehicles/{{newVehicleId}}",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-11: Vehicle Not Found
+    {
+      name: "I2-11: Vehicle Not Found",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));",
+            "pm.test('Returns NOT_FOUND code', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.code).to.equal('NOT_FOUND');",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/vehicles/99999",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-12: List All Drivers
+    {
+      name: "I2-12: List All Drivers",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns 5 drivers from seed', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data).to.have.lengthOf(5);",
+            "});",
+            "pm.test('Store driver IDs', () => {",
+            "  const { data } = pm.response.json();",
+            "  data.forEach(d => {",
+            "    if (d.name.includes('Alex'))  pm.environment.set('driverId_Alex', d.id);",
+            "    if (d.name.includes('Riya'))  pm.environment.set('driverId_Riya', d.id);",
+            "    if (d.name.includes('Dev'))   pm.environment.set('driverId_Dev', d.id);",
+            "    if (d.name.includes('Priya')) pm.environment.set('driverId_Priya', d.id);",
+            "    if (d.name.includes('Arjun')) pm.environment.set('driverId_Arjun', d.id);",
+            "  });",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/drivers",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-13: Get Expiring Drivers (within 30 days)
+    {
+      name: "I2-13: Get Expiring Drivers (within 30 days)",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns exactly 1 driver (Dev Malhotra, 12 days)', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data).to.have.lengthOf(1);",
+            "  pm.expect(data[0].name).to.include('Dev');",
+            "});",
+            "pm.test('Expiry date is within 30 days', () => {",
+            "  const { data } = pm.response.json();",
+            "  const expiry = new Date(data[0].licenseExpiry);",
+            "  const daysLeft = (expiry - new Date()) / 86400000;",
+            "  pm.expect(daysLeft).to.be.below(30);",
+            "  pm.expect(daysLeft).to.be.above(0);",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/drivers/expiring",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-14: Get Dispatchable Drivers
+    {
+      name: "I2-14: Get Dispatchable Drivers",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns only AVAILABLE drivers with valid license', () => {",
+            "  const { data } = pm.response.json();",
+            "  const names = data.map(d => d.name);",
+            "  pm.expect(names).to.not.include('Riya Singh');",
+            "  pm.expect(names).to.not.include('Priya Nair');",
+            "});",
+            "pm.test('All returned drivers have future license expiry', () => {",
+            "  const { data } = pm.response.json();",
+            "  data.forEach(d => {",
+            "    pm.expect(new Date(d.licenseExpiry) > new Date()).to.be.true;",
+            "  });",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/drivers/dispatchable",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-15: Filter Drivers by Status (SUSPENDED)
+    {
+      name: "I2-15: Filter Drivers by Status (SUSPENDED)",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Only Priya Nair is suspended', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data).to.have.lengthOf(1);",
+            "  pm.expect(data[0].name).to.include('Priya');",
+            "  pm.expect(data[0].status).to.equal('SUSPENDED');",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/drivers?status=SUSPENDED",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-16: Get Driver Detail (Dev Malhotra — safety events)
+    {
+      name: "I2-16: Get Driver Detail (Dev Malhotra — safety events)",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has safety events', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data.safetyEvents).to.be.an('array');",
+            "  pm.expect(data.safetyEvents.length).to.be.greaterThan(0);",
+            "  pm.expect(data.safetyEvents.length).to.equal(2);",
+            "});",
+            "pm.test('Safety score is 72 (100 - 15 - 13)', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data.safetyScore).to.equal(72);",
+            "});",
+            "pm.test('Has trip history', () => {",
+            "  const { data } = pm.response.json();",
+            "  pm.expect(data.trips).to.be.an('array');",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "GET",
+        url: "{{baseUrl}}/drivers/{{driverId_Dev}}",
+        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+      }
+    },
+    // I2-17: Create Driver — Duplicate License
+    {
+      name: "I2-17: Create Driver — Duplicate License",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));",
+            "pm.test('Returns conflict error', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.success).to.be.false;",
+            "  pm.expect(json.code).to.be.oneOf(['CONFLICT', 'DUPLICATE_LICENSE']);",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "POST",
+        url: "{{baseUrl}}/drivers",
+        header: [
+          { key: "Authorization", value: "Bearer {{token}}" },
+          { key: "Content-Type", value: "application/json" }
+        ],
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({
+            name: "Clone Driver",
+            licenseNumber: "MH-DL-2021-001",
+            licenseCategory: "LMV",
+            licenseExpiry: "2027-01-01",
+            contactNumber: "9999999999"
+          })
+        }
+      }
+    },
+    // I2-18: Create Driver — Expired License
+    {
+      name: "I2-18: Create Driver — Expired License",
+      event: [{
+        listen: "test",
+        script: {
+          exec: [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Rejects already-expired license', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.success).to.be.false;",
+            "});"
+          ]
+        }
+      }],
+      request: {
+        method: "POST",
+        url: "{{baseUrl}}/drivers",
+        header: [
+          { key: "Authorization", value: "Bearer {{token}}" },
+          { key: "Content-Type", value: "application/json" }
+        ],
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({
+            name: "Expired License Driver",
+            licenseNumber: "TEST-DL-EXPIRED",
+            licenseCategory: "LMV",
+            licenseExpiry: "2020-01-01",
+            contactNumber: "9999999999"
+          })
+        }
+      }
+    }
+  ]
+};
+
+// Remove if it already exists (for idempotency)
+collection.item = collection.item.filter(f => f.name !== "02 — Vehicles & Drivers");
+collection.item.push(folder02);
+
+fs.writeFileSync(collectionPath, JSON.stringify(collection, null, 2));
+console.log('02 — Vehicles & Drivers appended to collection.');

@@ -1,131 +1,139 @@
 {
+  "_": {
+    "postman_variable_scope": "environment",
+    "postman_exported_at": "2026-07-12T05:46:26.933Z",
+    "postman_exported_using": "Newman/6.2.2"
+  },
   "id": "e0e37b12-1f3c-4a3d-9d41-0b5c13b3c3c7",
   "name": "TransitOps Local",
   "values": [
     {
-      "key": "baseUrl",
+      "type": "any",
       "value": "http://localhost:3001/api",
-      "enabled": true
+      "key": "baseUrl"
     },
     {
-      "key": "token",
-      "value": "",
-      "enabled": true
+      "type": "any",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTMsImVtYWlsIjoiZmxlZXRAdHJhbnNpdG9wcy5jb20iLCJyb2xlIjoiRkxFRVRfTUFOQUdFUiIsIm5hbWUiOiJSYWplc2ggS3VtYXIiLCJpYXQiOjE3ODM4MzUyMzcsImV4cCI6MTc4NDQ0MDAzN30.AZXyQFURscjJ6BrbCKoHrO5d-Lv5gUbJczu244zA9pM",
+      "key": "token"
     },
     {
-      "key": "fleetEmail",
+      "type": "any",
       "value": "fleet@transitops.com",
-      "enabled": true
+      "key": "fleetEmail"
     },
     {
-      "key": "dispatchEmail",
+      "type": "any",
       "value": "dispatch@transitops.com",
-      "enabled": true
+      "key": "dispatchEmail"
     },
     {
-      "key": "safetyEmail",
+      "type": "any",
       "value": "safety@transitops.com",
-      "enabled": true
+      "key": "safetyEmail"
     },
     {
-      "key": "financeEmail",
+      "type": "any",
       "value": "finance@transitops.com",
-      "enabled": true
+      "key": "financeEmail"
     },
     {
-      "key": "password",
+      "type": "any",
       "value": "password123",
-      "enabled": true
+      "key": "password"
     },
     {
-      "key": "vehicleId_Van01",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "vehicleId_Van01"
     },
     {
-      "key": "vehicleId_Van05",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "vehicleId_Van05"
     },
     {
-      "key": "vehicleId_Truck02",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "vehicleId_Truck02"
     },
     {
-      "key": "vehicleId_Van04",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "vehicleId_Van04"
     },
     {
-      "key": "vehicleId_Van06",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "vehicleId_Van06"
     },
     {
-      "key": "vehicleId_Bike03",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "vehicleId_Bike03"
     },
     {
-      "key": "driverId_Alex",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "driverId_Alex"
     },
     {
-      "key": "driverId_Riya",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "driverId_Riya"
     },
     {
-      "key": "driverId_Dev",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "driverId_Dev"
     },
     {
-      "key": "driverId_Priya",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "driverId_Priya"
     },
     {
-      "key": "tripId_completed",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "tripId_completed"
     },
     {
-      "key": "tripId_dispatched",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "tripId_dispatched"
     },
     {
-      "key": "tripId_draft",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "tripId_draft"
     },
     {
-      "key": "newVehicleId",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "newVehicleId"
     },
     {
-      "key": "newDriverId",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "newDriverId"
     },
     {
-      "key": "newTripId",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "newTripId"
     },
     {
-      "key": "newMaintenanceId",
+      "type": "any",
       "value": "",
-      "enabled": true
+      "key": "newMaintenanceId"
     },
     {
-      "key": "currentOtp",
-      "value": "",
-      "enabled": true
+      "type": "any",
+      "value": "977038",
+      "key": "currentOtp"
     }
-  ]
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-07-12T05:47:17.586Z",
+  "_postman_exported_using": "Newman/6.2.2"
 }
