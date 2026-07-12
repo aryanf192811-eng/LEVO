@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticate } from '../middleware/auth';
-import { login, verifyOTP, getMe, register } from '../services/auth.service';
+import { login, verifyOTP, getMe, register, forgotPassword } from '../services/auth.service';
 import { sendSuccess, sendError } from '../utils/response';
 import { badRequest } from '../utils/errors';
 import { prisma } from '../config/prisma';
@@ -59,6 +59,24 @@ router.post(
     try {
       const result = await login(req.body.email, req.body.password);
       sendSuccess(res, result, 'OTP sent to registered email. Check server console.');
+    } catch (err) {
+      sendError(res, err);
+    }
+  },
+);
+
+// ── POST /forgot-password ─────────────────────────────────────────────────────
+router.post(
+  '/forgot-password',
+  [body('email').isEmail().withMessage('Valid email required')],
+  async (req: any, res: any) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return sendError(res, badRequest(errors.array()[0].msg));
+    }
+    try {
+      const result = await forgotPassword(req.body.email);
+      sendSuccess(res, result, 'OTP generated. Check console.');
     } catch (err) {
       sendError(res, err);
     }

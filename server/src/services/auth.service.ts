@@ -77,6 +77,29 @@ export const login = async (
   return response;
 };
 
+// ── forgotPassword ──────────────────────────────────────────────────────────
+export const forgotPassword = async (
+  email: string,
+): Promise<{ step: 'OTP_REQUIRED'; email: string; devOtp?: string }> => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw notFound('User not found');
+
+  const code = generateOTP();
+  const expiresAt = getOTPExpiry();
+
+  await prisma.oTP.upsert({
+    where: { email },
+    update: { code, expiresAt },
+    create: { email, code, expiresAt },
+  });
+
+  const response: any = { step: 'OTP_REQUIRED', email };
+  if (process.env.NODE_ENV !== 'production') {
+    response.devOtp = code;
+  }
+  return response;
+};
+
 // ── verifyOTP ─────────────────────────────────────────────────────────────────
 export const verifyOTP = async (
   email: string,

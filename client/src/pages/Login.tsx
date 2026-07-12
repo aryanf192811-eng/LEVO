@@ -30,10 +30,10 @@ export default function Login() {
   const [verifiedEmail, setVerifiedEmail] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
-  const { login, verifyOtp, register: registerUser, isLoading } = useAuthStore()
+  const { login, verifyOtp, register: registerUser, forgotPassword, isLoading } = useAuthStore()
   const navigate = useNavigate()
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+  const { register, handleSubmit, getValues, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema)
   })
 
@@ -57,6 +57,22 @@ export default function Login() {
     setErrorMsg('')
     try {
       const res = await registerUser(data.name, data.email, data.password, data.role)
+      setVerifiedEmail(res.email)
+      setStep('otp')
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err))
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    const email = getValues('email')
+    if (!email) {
+      setErrorMsg('Please enter your email address to reset password')
+      return
+    }
+    setErrorMsg('')
+    try {
+      const res = await forgotPassword(email)
       setVerifiedEmail(res.email)
       setStep('otp')
     } catch (err) {
@@ -156,7 +172,7 @@ export default function Login() {
                     <label className="text-[13px] font-medium text-slate-700">Password</label>
                     <button 
                       type="button" 
-                      onClick={(e) => { e.preventDefault(); setErrorMsg('Password reset is disabled in the demo environment. Please contact your system administrator.') }} 
+                      onClick={(e) => { e.preventDefault(); handleForgotPassword() }} 
                       className="text-amber-600 text-[13px] font-medium hover:text-amber-700"
                     >
                       Forgot password?

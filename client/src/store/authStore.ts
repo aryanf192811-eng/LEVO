@@ -12,6 +12,7 @@ pendingOtpEmail: string | null
 // Actions
 register:  (name: string, email: string, password: string, role: string) => Promise<{ email: string }>
 login:     (email: string, password: string) => Promise<{ email: string }>
+forgotPassword: (email: string) => Promise<{ email: string }>
 verifyOtp: (email: string, code: string) => Promise<void>
 logout:    () => Promise<void>
 checkAuth: () => Promise<void>
@@ -51,6 +52,23 @@ pendingOtpEmail: null,
       )
       if (data.devOtp) {
         console.warn(`[DEV ONLY] Your OTP is: ${data.devOtp}`);
+      }
+      set({ pendingOtpEmail: data.email, isLoading: false })
+      return { email: data.email }
+    } catch (err) {
+      set({ isLoading: false })
+      throw err
+    }
+  },
+
+  forgotPassword: async (email) => {
+    set({ isLoading: true })
+    try {
+      const data = await api.post<{ step: string; email: string; devOtp?: string }>(
+        '/auth/forgot-password', { email }
+      )
+      if (data.devOtp) {
+        console.warn(`[DEV ONLY] Password Reset OTP is: ${data.devOtp}`);
       }
       set({ pendingOtpEmail: data.email, isLoading: false })
       return { email: data.email }
