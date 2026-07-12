@@ -319,7 +319,7 @@ export default function Login() {
                 </div>
               </form>
             </div>
-          ) : (
+          ) : step === 'otp' ? (
             <div className="animate-in fade-in slide-in-from-right-8 duration-500">
               <h2 className="text-[28px] font-bold text-slate-900 mb-2 tracking-tight">Verify your identity</h2>
               <p className="text-slate-500 mb-6">OTP sent to <span className="font-medium text-slate-800">{verifiedEmail}</span></p>
