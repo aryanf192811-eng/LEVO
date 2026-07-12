@@ -12,6 +12,8 @@ import driversRouter from './routes/drivers.routes';       // B5
 import tripsRouter from './routes/trips.routes';           // B6
 import maintenanceRouter from './routes/maintenance.routes'; // B6
 import financialRouter from './routes/financial.routes';   // B7
+import { weatherRouter, notificationRouter } from './routes/weather.routes'; // B8
+import dashboardRouter from './routes/dashboard.routes';   // B9
 
 const app = express();
 
@@ -29,9 +31,9 @@ app.use('/api/drivers',  driversRouter);  // B5
 app.use('/api/trips',         tripsRouter);       // B6
 app.use('/api/maintenance',   maintenanceRouter); // B6
 app.use('/api/financial',     financialRouter);   // B7
-// app.use('/api/weather',       weatherRouter)      ← B8
-// app.use('/api/notifications', notificationRouter) ← B8
-// app.use('/api/dashboard',     dashboardRouter)    ← B9
+app.use('/api/weather',       weatherRouter);      // B8
+app.use('/api/notifications', notificationRouter); // B8
+app.use('/api/dashboard',     dashboardRouter);    // B9
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (_req: Request, res: Response) => {
