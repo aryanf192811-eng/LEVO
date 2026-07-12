@@ -100,6 +100,32 @@ export const forgotPassword = async (
   return response;
 };
 
+// ── verifyResetOtp ──────────────────────────────────────────────────────────────
+export const verifyResetOtp = async (email: string, code: string): Promise<{ valid: boolean }> => {
+  const otp = await prisma.oTP.findUnique({ where: { email } });
+  if (!otp) throw badRequest('No OTP requested for this email', 'OTP_INVALID');
+  if (otp.expiresAt < new Date()) throw badRequest('OTP has expired.', 'OTP_EXPIRED');
+  if (otp.code !== code) throw badRequest('Invalid OTP', 'OTP_INVALID');
+  
+  return { valid: true };
+};
+
+// ── resetPassword ─────────────────────────────────────────────────────────────
+export const resetPassword = async (email: string, code: string, newPassword: string): Promise<{ success: boolean }> => {
+  // Verify OTP again just to be safe
+  await verifyResetOtp(email, code);
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { email },
+    data: { passwordHash }
+  });
+
+  await prisma.oTP.delete({ where: { email } });
+  
+  return { success: true };
+};
+
 // ── verifyOTP ─────────────────────────────────────────────────────────────────
 export const verifyOTP = async (
   email: string,

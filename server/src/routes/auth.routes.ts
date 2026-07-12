@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticate } from '../middleware/auth';
-import { login, verifyOTP, getMe, register, forgotPassword } from '../services/auth.service';
+import { login, verifyOTP, getMe, register, forgotPassword, verifyResetOtp, resetPassword } from '../services/auth.service';
 import { sendSuccess, sendError } from '../utils/response';
 import { badRequest } from '../utils/errors';
 import { prisma } from '../config/prisma';
@@ -81,6 +81,47 @@ router.post(
       sendError(res, err);
     }
   },
+);
+
+// ── POST /verify-reset-otp ────────────────────────────────────────────────────
+router.post(
+  '/verify-reset-otp',
+  [
+    body('email').isEmail().withMessage('Valid email required'),
+    body('code').isString().isLength({ min: 6, max: 6 }).isNumeric().withMessage('OTP must be a 6-digit code'),
+  ],
+  async (req: any, res: any) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return sendError(res, badRequest(errors.array()[0].msg));
+    
+    try {
+      const result = await verifyResetOtp(req.body.email, req.body.code);
+      sendSuccess(res, result, 'OTP verified successfully');
+    } catch (err) {
+      sendError(res, err);
+    }
+  }
+);
+
+// ── POST /reset-password ──────────────────────────────────────────────────────
+router.post(
+  '/reset-password',
+  [
+    body('email').isEmail().withMessage('Valid email required'),
+    body('code').isString().isLength({ min: 6, max: 6 }).isNumeric().withMessage('OTP must be a 6-digit code'),
+    body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+  ],
+  async (req: any, res: any) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return sendError(res, badRequest(errors.array()[0].msg));
+    
+    try {
+      const result = await resetPassword(req.body.email, req.body.code, req.body.newPassword);
+      sendSuccess(res, result, 'Password reset successful');
+    } catch (err) {
+      sendError(res, err);
+    }
+  }
 );
 
 // ── POST /verify-otp ──────────────────────────────────────────────────────────

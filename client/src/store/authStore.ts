@@ -13,6 +13,8 @@ pendingOtpEmail: string | null
 register:  (name: string, email: string, password: string, role: string) => Promise<{ email: string }>
 login:     (email: string, password: string) => Promise<{ email: string }>
 forgotPassword: (email: string) => Promise<{ email: string }>
+verifyResetOtp: (email: string, code: string) => Promise<void>
+resetPassword: (email: string, code: string, newPassword: string) => Promise<void>
 verifyOtp: (email: string, code: string) => Promise<void>
 logout:    () => Promise<void>
 checkAuth: () => Promise<void>
@@ -72,6 +74,28 @@ pendingOtpEmail: null,
       }
       set({ pendingOtpEmail: data.email, isLoading: false })
       return { email: data.email }
+    } catch (err) {
+      set({ isLoading: false })
+      throw err
+    }
+  },
+
+  verifyResetOtp: async (email, code) => {
+    set({ isLoading: true })
+    try {
+      await api.post('/auth/verify-reset-otp', { email, code })
+      set({ isLoading: false })
+    } catch (err) {
+      set({ isLoading: false })
+      throw err
+    }
+  },
+
+  resetPassword: async (email, code, newPassword) => {
+    set({ isLoading: true })
+    try {
+      await api.post('/auth/reset-password', { email, code, newPassword })
+      set({ pendingOtpEmail: null, isLoading: false })
     } catch (err) {
       set({ isLoading: false })
       throw err

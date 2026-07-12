@@ -26,11 +26,13 @@ const signupSchema = z.object({
 type SignupForm = z.infer<typeof signupSchema>
 
 export default function Login() {
-  const [step, setStep] = useState<'login' | 'signup' | 'otp'>('login')
+  const [step, setStep] = useState<'login' | 'signup' | 'otp' | 'forgot-otp' | 'reset-password'>('login')
   const [verifiedEmail, setVerifiedEmail] = useState('')
   const [otpCode, setOtpCode] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
-  const { login, verifyOtp, register: registerUser, forgotPassword, isLoading } = useAuthStore()
+  const { login, verifyOtp, register: registerUser, forgotPassword, verifyResetOtp, resetPassword, isLoading } = useAuthStore()
   const navigate = useNavigate()
 
   const { register, handleSubmit, getValues, formState: { errors } } = useForm<LoginForm>({
@@ -74,7 +76,7 @@ export default function Login() {
     try {
       const res = await forgotPassword(email)
       setVerifiedEmail(res.email)
-      setStep('otp')
+      setStep('forgot-otp')
     } catch (err) {
       setErrorMsg(getErrorMessage(err))
     }
@@ -93,6 +95,37 @@ export default function Login() {
     } catch (err) {
       setErrorMsg(getErrorMessage(err))
       setOtpCode('')
+    }
+  }
+
+  const onSubmitForgotOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMsg('')
+    if (otpCode.length !== 6) return setErrorMsg('OTP must be 6 digits')
+    try {
+      await verifyResetOtp(verifiedEmail, otpCode)
+      setStep('reset-password')
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err))
+      setOtpCode('')
+    }
+  }
+
+  const onSubmitResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMsg('')
+    if (newPassword.length < 6) return setErrorMsg('Password must be at least 6 characters')
+    if (newPassword !== confirmNewPassword) return setErrorMsg('Passwords do not match')
+    try {
+      await resetPassword(verifiedEmail, otpCode, newPassword)
+      setStep('login')
+      setOtpCode('')
+      setNewPassword('')
+      setConfirmNewPassword('')
+      // Show success message as errorMsg briefly before user types (it uses same UI container for feedback)
+      setErrorMsg('Password reset successfully. You can now sign in.')
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err))
     }
   }
 
@@ -326,6 +359,89 @@ export default function Login() {
                     Back to login
                   </button>
                 </div>
+              </form>
+            </div>
+          ) : step === 'forgot-otp' ? (
+            <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+              <h2 className="text-[28px] font-bold text-slate-900 mb-2 tracking-tight">Verify Reset Request</h2>
+              <p className="text-slate-500 mb-6">OTP sent to <span className="font-medium text-slate-800">{verifiedEmail}</span></p>
+              
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3 mb-8">
+                <Info className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-[13px] text-amber-800 font-medium">Check your server console for the password reset OTP.</p>
+              </div>
+
+              <form onSubmit={onSubmitForgotOtp} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium text-slate-700">6-Digit Code</label>
+                  <input 
+                    type="text" 
+                    maxLength={6}
+                    pattern="[0-9]*"
+                    autoFocus
+                    value={otpCode}
+                    onChange={e => setOtpCode(e.target.value)}
+                    className="w-full text-center tracking-[1em] text-2xl h-14 px-3 border border-slate-200 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                  />
+                </div>
+
+                {errorMsg && <div className="text-red-500 text-sm p-3 bg-red-50 rounded-lg">{errorMsg}</div>}
+
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold text-[15px] transition-colors flex items-center justify-center gap-2"
+                >
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Verify OTP
+                </button>
+                
+                <div className="text-center">
+                  <button type="button" onClick={() => setStep('login')} className="text-slate-500 text-sm hover:text-slate-800 transition-colors">
+                    Back to login
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+              <h2 className="text-[28px] font-bold text-slate-900 mb-2 tracking-tight">Set New Password</h2>
+              <p className="text-slate-500 mb-6">Create a new password for <span className="font-medium text-slate-800">{verifiedEmail}</span></p>
+
+              <form onSubmit={onSubmitResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium text-slate-700">New Password</label>
+                  <input 
+                    type="password" 
+                    autoFocus
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="w-full h-11 px-3 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors placeholder:text-slate-400"
+                    placeholder="••••••••"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium text-slate-700">Confirm New Password</label>
+                  <input 
+                    type="password" 
+                    value={confirmNewPassword}
+                    onChange={e => setConfirmNewPassword(e.target.value)}
+                    className="w-full h-11 px-3 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors placeholder:text-slate-400"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                {errorMsg && <div className={`text-sm p-3 rounded-lg ${errorMsg.includes('successful') ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>{errorMsg}</div>}
+
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold text-[15px] transition-colors flex items-center justify-center gap-2 mt-2"
+                >
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Set Password
+                </button>
               </form>
             </div>
           )}
