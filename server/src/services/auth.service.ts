@@ -9,7 +9,7 @@ export type SafeUser = {
   email: string;
   name: string;
   role: string;
-  createdAt: Date;
+  createdAt?: Date;
 };
 
 // ── login ─────────────────────────────────────────────────────────────────────
