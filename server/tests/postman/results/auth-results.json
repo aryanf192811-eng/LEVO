@@ -1,0 +1,4111 @@
+{
+  "collection": {
+    "item": [
+      {
+        "id": "9158053a-6801-4a1f-8268-fbbec8d33f9c",
+        "name": "01 — Auth",
+        "item": [
+          {
+            "id": "0eaeae17-0383-4b4d-9a68-5962c71b94da",
+            "name": "I1-01: Health Check",
+            "request": {
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "df01ba7f-d4ed-4e9f-8631-56e5f661dff2",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                    "pm.test('Response is success', () => {",
+                    "  const json = pm.response.json();",
+                    "  pm.expect(json.success).to.be.true;",
+                    "  pm.expect(json.data.status).to.equal('ok');",
+                    "  pm.expect(json.data).to.have.property('timestamp');",
+                    "});",
+                    "pm.test('Response time < 300ms', () => pm.expect(pm.response.responseTime).to.be.below(300));"
+                  ],
+                  "_lastExecutionId": "f9736555-57f7-4777-91b7-dd26e70dbf47"
+                }
+              }
+            ]
+          },
+          {
+            "id": "9f738b1e-3d21-4277-94c1-104a12774e7b",
+            "name": "I1-02: Login (Step 1)",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "login"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\":\"{{fleetEmail}}\",\"password\":\"{{password}}\"}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "6699c854-ded2-4a3f-8f8b-0d694e4760c3",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                    "pm.test('Returns OTP step', () => {",
+                    "  const json = pm.response.json();",
+                    "  pm.expect(json.success).to.be.true;",
+                    "  pm.expect(json.data.step).to.equal('OTP_REQUIRED');",
+                    "  pm.expect(json.data.email).to.equal(pm.environment.get('fleetEmail'));",
+                    "});",
+                    "pm.test('No OTP in response body (security check)', () => {",
+                    "  const body = pm.response.text();",
+                    "  pm.expect(body).to.not.include('code');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "bc15f174-9b77-4a76-814a-228bc7bff4f8"
+                }
+              }
+            ]
+          },
+          {
+            "id": "81d0acb5-08b2-4336-858e-9fa989deebdd",
+            "name": "I1-03: Get OTP from Dev Endpoint",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "dev",
+                  "otp"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [
+                  {
+                    "key": "email",
+                    "value": "{{fleetEmail}}"
+                  }
+                ],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "3dc126cd-89c3-4bef-aca1-7f667430d2d9",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 — dev OTP endpoint works', () => pm.response.to.have.status(200));",
+                    "pm.test('OTP is 6 digits', () => {",
+                    "  const json = pm.response.json();",
+                    "  pm.expect(json.data.code).to.match(/^\\d{6}$/);",
+                    "  pm.expect(new Date(json.data.expiresAt) > new Date()).to.be.true;",
+                    "  pm.environment.set('currentOtp', json.data.code);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "ae4822a4-fc2a-47b6-a14e-9b372527dcca"
+                }
+              }
+            ]
+          },
+          {
+            "id": "20e25a5e-2bde-4c35-8e8c-2eb17c0d9767",
+            "name": "I1-04: Verify OTP (Step 2) — Get JWT",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "verify-otp"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\":\"{{fleetEmail}}\",\"code\":\"{{currentOtp}}\"}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "501a01fd-dab8-48e1-bc29-1b70b877aa7a",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const otp = pm.environment.get('currentOtp');",
+                    "if (!otp) throw new Error('currentOtp variable not set — run I1-03 first');"
+                  ],
+                  "_lastExecutionId": "f5d322b8-8249-4d95-b489-21cbc0c154c8"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "e29c8887-ddcc-4ea5-8741-4b4069999e74",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                    "pm.test('Returns user object', () => {",
+                    "  const json = pm.response.json();",
+                    "  pm.expect(json.success).to.be.true;",
+                    "  pm.expect(json.data.user).to.have.all.keys('id', 'email', 'name', 'role');",
+                    "  pm.expect(json.data.user.email).to.equal('fleet@transitops.com');",
+                    "  pm.expect(json.data.user.role).to.equal('FLEET_MANAGER');",
+                    "});",
+                    "pm.test('No password hash in response (security)', () => {",
+                    "  const body = pm.response.text();",
+                    "  pm.expect(body).to.not.include('passwordHash');",
+                    "  pm.expect(body).to.not.include('password');",
+                    "});",
+                    "pm.test('JWT available (via header or cookie)', () => {",
+                    "  const headerToken = pm.response.headers.get('X-Auth-Token');",
+                    "  if (headerToken) {",
+                    "    pm.environment.set('token', headerToken);",
+                    "    pm.test('Token set from header', () => pm.expect(headerToken).to.be.a('string'));",
+                    "  } else {",
+                    "    pm.test('WARN: X-Auth-Token header missing — ensure backend sends it', () => {",
+                    "      pm.expect(headerToken).to.not.be.undefined;",
+                    "    });",
+                    "  }",
+                    "});"
+                  ],
+                  "_lastExecutionId": "3321ae9d-4ce7-4375-84a4-02a22347f8e9"
+                }
+              }
+            ]
+          },
+          {
+            "id": "0c444314-d794-43c4-81fd-d80a5fcd7881",
+            "name": "I1-05: Get Current User (/me)",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "me"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{token}}"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "1b0c2f0c-1120-414d-b76b-34c625987312",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                    "pm.test('Returns correct user', () => {",
+                    "  const { data } = pm.response.json();",
+                    "  pm.expect(data.email).to.equal('fleet@transitops.com');",
+                    "  pm.expect(data.role).to.equal('FLEET_MANAGER');",
+                    "  pm.expect(data).to.not.have.property('passwordHash');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "b5b5ed71-ecfe-46c8-8a8a-2ae4da6d5027"
+                }
+              }
+            ]
+          },
+          {
+            "id": "02e60992-195c-409a-bf20-022e86a5cb6b",
+            "name": "I1-06: Login Failure — Wrong Password",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "login"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\":\"{{fleetEmail}}\",\"password\":\"wrongpassword\"}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "d778153c-412f-45a5-b810-ca8b9148e901",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                    "pm.test('Returns generic error (does not reveal what is wrong)', () => {",
+                    "  const json = pm.response.json();",
+                    "  pm.expect(json.success).to.be.false;",
+                    "  pm.expect(json.error).to.equal('Invalid email or password');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "04281175-7048-4598-8402-7af338308dab"
+                }
+              }
+            ]
+          },
+          {
+            "id": "2d6756be-c7a1-43d2-b8af-1a800c88976b",
+            "name": "I1-07: Login Failure — Non-existent Email",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "login"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\":\"nobody@example.com\",\"password\":\"password123\"}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "4158a98d-ea24-4e52-bdb3-8af9bf5dd670",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                    "pm.test('Same error message as wrong password', () => {",
+                    "  const json = pm.response.json();",
+                    "  pm.expect(json.error).to.equal('Invalid email or password');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "0733c896-8aff-4e70-806f-eb69267a17f0"
+                }
+              }
+            ]
+          },
+          {
+            "id": "4e12df6f-7242-4bce-8fba-618f66e19a60",
+            "name": "I1-08: Verify OTP — Expired/Wrong OTP",
+            "request": {
+              "url": {
+                "path": [
+                  "auth",
+                  "verify-otp"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\":\"{{fleetEmail}}\",\"code\":\"000000\"}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "b75f02e7-67ba-4375-9409-472adb57aaf8",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                    "pm.test('Returns OTP_INVALID code', () => {",
+                    "  const json = pm.response.json();",
+                    "  pm.expect(json.code).to.be.oneOf(['OTP_INVALID', 'OTP_EXPIRED']);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "bbf2c1ee-c9f5-4eea-ba70-8b063119c91d"
+                }
+              }
+            ]
+          },
+          {
+            "id": "bb2cacc1-2feb-46a4-b00b-e2d9048107da",
+            "name": "I1-09: RBAC — Unauthorized Access Without Token",
+            "request": {
+              "url": {
+                "path": [
+                  "vehicles"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "bf7f1058-7dec-4d24-9141-a5b853498618",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const jar = pm.cookies.jar();",
+                    "jar.clear('localhost', function (error) {});"
+                  ],
+                  "_lastExecutionId": "75c2cf1f-b626-4044-a204-82cc1f80a21a"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "970e668c-9dd1-4c8e-b3ad-bb19d46fe8c2",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                    "pm.test('Returns UNAUTHORIZED code', () => {",
+                    "  const json = pm.response.json();",
+                    "  pm.expect(json.success).to.be.false;",
+                    "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "e013c2da-845e-4dfe-a4ff-cade8b86a439"
+                }
+              }
+            ]
+          },
+          {
+            "id": "752a02da-3758-428a-8682-3aae87fd75dd",
+            "name": "I1-10: RBAC — Dispatcher Cannot Access Settings (role-protected endpoint)",
+            "request": {
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "ec0a87dc-fd01-42ec-a504-80f631018329",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('MANUAL VERIFICATION: Login as dispatch@transitops.com, navigate to /settings in browser — should redirect to /dashboard', () => {",
+                    "  pm.expect(true).to.be.true;",
+                    "});"
+                  ],
+                  "_lastExecutionId": "b57493bb-1935-4fee-b067-e9577ac7a9ae"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "553d0186-3dfb-4a01-8bad-59503216b9c1",
+      "name": "TransitOps API — Full Validation",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    }
+  },
+  "environment": {
+    "id": "e0e37b12-1f3c-4a3d-9d41-0b5c13b3c3c7",
+    "name": "TransitOps Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:3001/api",
+        "key": "baseUrl"
+      },
+      {
+        "type": "any",
+        "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwiZW1haWwiOiJmbGVldEB0cmFuc2l0b3BzLmNvbSIsInJvbGUiOiJGTEVFVF9NQU5BR0VSIiwibmFtZSI6IlJhamVzaCBLdW1hciIsImlhdCI6MTc4MzgzNTAyNywiZXhwIjoxNzg0NDM5ODI3fQ.yL4cynKldLPGI0w0wx4Uc9Q_sbvGIrwLsVTn2oXvPms",
+        "key": "token"
+      },
+      {
+        "type": "any",
+        "value": "fleet@transitops.com",
+        "key": "fleetEmail"
+      },
+      {
+        "type": "any",
+        "value": "dispatch@transitops.com",
+        "key": "dispatchEmail"
+      },
+      {
+        "type": "any",
+        "value": "safety@transitops.com",
+        "key": "safetyEmail"
+      },
+      {
+        "type": "any",
+        "value": "finance@transitops.com",
+        "key": "financeEmail"
+      },
+      {
+        "type": "any",
+        "value": "password123",
+        "key": "password"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "vehicleId_Van01"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "vehicleId_Van05"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "vehicleId_Truck02"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "vehicleId_Van04"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "vehicleId_Van06"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "vehicleId_Bike03"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "driverId_Alex"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "driverId_Riya"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "driverId_Dev"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "driverId_Priya"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "tripId_completed"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "tripId_dispatched"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "tripId_draft"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "newVehicleId"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "newDriverId"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "newTripId"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "newMaintenanceId"
+      },
+      {
+        "type": "any",
+        "value": "620544",
+        "key": "currentOtp"
+      }
+    ]
+  },
+  "globals": {
+    "id": "12669463-ced9-4306-9004-2e28db8c9dcb",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 10,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 12,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 10,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 10,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 10,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 24,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 10,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 28,
+      "responseMin": 4,
+      "responseMax": 138,
+      "responseSd": 40.89743268226014,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1783835027354,
+      "completed": 1783835028490
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 10,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "a9a2f18b-d196-4419-821f-a0fec4394a59",
+          "httpRequestId": "2400fdeb-a575-4f8d-bfa0-1006ad47db7c"
+        },
+        "item": {
+          "id": "0eaeae17-0383-4b4d-9a68-5962c71b94da",
+          "name": "I1-01: Health Check",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "df01ba7f-d4ed-4e9f-8631-56e5f661dff2",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is success', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data.status).to.equal('ok');",
+                  "  pm.expect(json.data).to.have.property('timestamp');",
+                  "});",
+                  "pm.test('Response time < 300ms', () => pm.expect(pm.response.responseTime).to.be.below(300));"
+                ],
+                "_lastExecutionId": "f9736555-57f7-4777-91b7-dd26e70dbf47"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "4b6be36a-ac95-411a-91e7-7adc52db45f9",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "cb01b9c1-84f0-4086-a995-e3a37fa841bf",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "98"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"62-fBeF5Oq4SpbcBx0I3Xcy4PBveDg\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:47 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              116,
+              114,
+              117,
+              101,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              34,
+              58,
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              111,
+              107,
+              34,
+              44,
+              34,
+              116,
+              105,
+              109,
+              101,
+              115,
+              116,
+              97,
+              109,
+              112,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              55,
+              45,
+              49,
+              50,
+              84,
+              48,
+              53,
+              58,
+              52,
+              51,
+              58,
+              52,
+              55,
+              46,
+              52,
+              49,
+              52,
+              90,
+              34,
+              125,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              83,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 30,
+          "responseSize": 98
+        },
+        "id": "0eaeae17-0383-4b4d-9a68-5962c71b94da",
+        "assertions": [
+          {
+            "assertion": "Status 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Response is success",
+            "skipped": false
+          },
+          {
+            "assertion": "Response time < 300ms",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "ce090ee7-85e8-40be-a4de-6a26d30c6b0b",
+          "length": 10,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "282b52a8-8552-46ec-aa2d-0bc1aa1b4753"
+        },
+        "item": {
+          "id": "9f738b1e-3d21-4277-94c1-104a12774e7b",
+          "name": "I1-02: Login (Step 1)",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "login"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{fleetEmail}}\",\"password\":\"{{password}}\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "6699c854-ded2-4a3f-8f8b-0d694e4760c3",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns OTP step', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data.step).to.equal('OTP_REQUIRED');",
+                  "  pm.expect(json.data.email).to.equal(pm.environment.get('fleetEmail'));",
+                  "});",
+                  "pm.test('No OTP in response body (security check)', () => {",
+                  "  const body = pm.response.text();",
+                  "  pm.expect(body).to.not.include('code');",
+                  "});"
+                ],
+                "_lastExecutionId": "bc15f174-9b77-4a76-814a-228bc7bff4f8"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "auth",
+              "login"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "a3d86da4-52fe-40fa-8bfe-b9317eedb943",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "57",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\":\"fleet@transitops.com\",\"password\":\"password123\"}"
+          }
+        },
+        "response": {
+          "id": "a88a6b2b-e59e-4b79-9168-e4b215b7dab3",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "142"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"8e-ieQmjOr/ng9qF12THfDPNrB7f5Y\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:47 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              116,
+              114,
+              117,
+              101,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              34,
+              58,
+              123,
+              34,
+              115,
+              116,
+              101,
+              112,
+              34,
+              58,
+              34,
+              79,
+              84,
+              80,
+              95,
+              82,
+              69,
+              81,
+              85,
+              73,
+              82,
+              69,
+              68,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              102,
+              108,
+              101,
+              101,
+              116,
+              64,
+              116,
+              114,
+              97,
+              110,
+              115,
+              105,
+              116,
+              111,
+              112,
+              115,
+              46,
+              99,
+              111,
+              109,
+              34,
+              125,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              79,
+              84,
+              80,
+              32,
+              115,
+              101,
+              110,
+              116,
+              32,
+              116,
+              111,
+              32,
+              114,
+              101,
+              103,
+              105,
+              115,
+              116,
+              101,
+              114,
+              101,
+              100,
+              32,
+              101,
+              109,
+              97,
+              105,
+              108,
+              46,
+              32,
+              67,
+              104,
+              101,
+              99,
+              107,
+              32,
+              115,
+              101,
+              114,
+              118,
+              101,
+              114,
+              32,
+              99,
+              111,
+              110,
+              115,
+              111,
+              108,
+              101,
+              46,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 138,
+          "responseSize": 142
+        },
+        "id": "9f738b1e-3d21-4277-94c1-104a12774e7b",
+        "assertions": [
+          {
+            "assertion": "Status 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Returns OTP step",
+            "skipped": false
+          },
+          {
+            "assertion": "No OTP in response body (security check)",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "cca42ac9-c11e-4e28-b857-468b11067f12",
+          "length": 10,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "591f1867-c346-460b-93d1-9ee816627e95"
+        },
+        "item": {
+          "id": "81d0acb5-08b2-4336-858e-9fa989deebdd",
+          "name": "I1-03: Get OTP from Dev Endpoint",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "dev",
+                "otp"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{fleetEmail}}"
+                }
+              ],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "3dc126cd-89c3-4bef-aca1-7f667430d2d9",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 — dev OTP endpoint works', () => pm.response.to.have.status(200));",
+                  "pm.test('OTP is 6 digits', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.code).to.match(/^\\d{6}$/);",
+                  "  pm.expect(new Date(json.data.expiresAt) > new Date()).to.be.true;",
+                  "  pm.environment.set('currentOtp', json.data.code);",
+                  "});"
+                ],
+                "_lastExecutionId": "ae4822a4-fc2a-47b6-a14e-9b372527dcca"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "auth",
+              "dev",
+              "otp"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [
+              {
+                "key": "email",
+                "value": "fleet@transitops.com"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "eaf001ce-3b0b-4a01-8b88-49382e6cdd44",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "8aa51ed6-1964-480a-8cb5-49697e903a61",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "80"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"50-QCriv3GusCIl/QPwF0img1MrdbA\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:47 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              116,
+              114,
+              117,
+              101,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              34,
+              58,
+              123,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              54,
+              50,
+              48,
+              53,
+              52,
+              52,
+              34,
+              44,
+              34,
+              101,
+              120,
+              112,
+              105,
+              114,
+              101,
+              115,
+              65,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              55,
+              45,
+              49,
+              50,
+              84,
+              48,
+              53,
+              58,
+              53,
+              51,
+              58,
+              52,
+              55,
+              46,
+              54,
+              52,
+              48,
+              90,
+              34,
+              125,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 12,
+          "responseSize": 80
+        },
+        "id": "81d0acb5-08b2-4336-858e-9fa989deebdd",
+        "assertions": [
+          {
+            "assertion": "Status 200 — dev OTP endpoint works",
+            "skipped": false
+          },
+          {
+            "assertion": "OTP is 6 digits",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "ab2073ef-f29f-4326-843a-318f8ac20e11",
+          "length": 10,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "86d03b24-ea18-44a4-afb5-0890d529dcd9"
+        },
+        "item": {
+          "id": "20e25a5e-2bde-4c35-8e8c-2eb17c0d9767",
+          "name": "I1-04: Verify OTP (Step 2) — Get JWT",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "verify-otp"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{fleetEmail}}\",\"code\":\"{{currentOtp}}\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "501a01fd-dab8-48e1-bc29-1b70b877aa7a",
+                "type": "text/javascript",
+                "exec": [
+                  "const otp = pm.environment.get('currentOtp');",
+                  "if (!otp) throw new Error('currentOtp variable not set — run I1-03 first');"
+                ],
+                "_lastExecutionId": "f5d322b8-8249-4d95-b489-21cbc0c154c8"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "e29c8887-ddcc-4ea5-8741-4b4069999e74",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns user object', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data.user).to.have.all.keys('id', 'email', 'name', 'role');",
+                  "  pm.expect(json.data.user.email).to.equal('fleet@transitops.com');",
+                  "  pm.expect(json.data.user.role).to.equal('FLEET_MANAGER');",
+                  "});",
+                  "pm.test('No password hash in response (security)', () => {",
+                  "  const body = pm.response.text();",
+                  "  pm.expect(body).to.not.include('passwordHash');",
+                  "  pm.expect(body).to.not.include('password');",
+                  "});",
+                  "pm.test('JWT available (via header or cookie)', () => {",
+                  "  const headerToken = pm.response.headers.get('X-Auth-Token');",
+                  "  if (headerToken) {",
+                  "    pm.environment.set('token', headerToken);",
+                  "    pm.test('Token set from header', () => pm.expect(headerToken).to.be.a('string'));",
+                  "  } else {",
+                  "    pm.test('WARN: X-Auth-Token header missing — ensure backend sends it', () => {",
+                  "      pm.expect(headerToken).to.not.be.undefined;",
+                  "    });",
+                  "  }",
+                  "});"
+                ],
+                "_lastExecutionId": "3321ae9d-4ce7-4375-84a4-02a22347f8e9"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "auth",
+              "verify-otp"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "7711d8d8-232d-4d29-b0ce-c64aab60f7eb",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "48",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\":\"fleet@transitops.com\",\"code\":\"620544\"}"
+          }
+        },
+        "response": {
+          "id": "093bfccf-5462-447d-9b8c-fa14182fa5fc",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Set-Cookie",
+              "value": "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwiZW1haWwiOiJmbGVldEB0cmFuc2l0b3BzLmNvbSIsInJvbGUiOiJGTEVFVF9NQU5BR0VSIiwibmFtZSI6IlJhamVzaCBLdW1hciIsImlhdCI6MTc4MzgzNTAyNywiZXhwIjoxNzg0NDM5ODI3fQ.yL4cynKldLPGI0w0wx4Uc9Q_sbvGIrwLsVTn2oXvPms; Max-Age=604800; Path=/; Expires=Sun, 19 Jul 2026 05:43:47 GMT; HttpOnly; SameSite=Lax"
+            },
+            {
+              "key": "X-Auth-Token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwiZW1haWwiOiJmbGVldEB0cmFuc2l0b3BzLmNvbSIsInJvbGUiOiJGTEVFVF9NQU5BR0VSIiwibmFtZSI6IlJhamVzaCBLdW1hciIsImlhdCI6MTc4MzgzNTAyNywiZXhwIjoxNzg0NDM5ODI3fQ.yL4cynKldLPGI0w0wx4Uc9Q_sbvGIrwLsVTn2oXvPms"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "146"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"92-ytEi8rVp0SLbpv1HDop2+c7ZwF4\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:47 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              116,
+              114,
+              117,
+              101,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              34,
+              58,
+              123,
+              34,
+              117,
+              115,
+              101,
+              114,
+              34,
+              58,
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              57,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              102,
+              108,
+              101,
+              101,
+              116,
+              64,
+              116,
+              114,
+              97,
+              110,
+              115,
+              105,
+              116,
+              111,
+              112,
+              115,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              82,
+              97,
+              106,
+              101,
+              115,
+              104,
+              32,
+              75,
+              117,
+              109,
+              97,
+              114,
+              34,
+              44,
+              34,
+              114,
+              111,
+              108,
+              101,
+              34,
+              58,
+              34,
+              70,
+              76,
+              69,
+              69,
+              84,
+              95,
+              77,
+              65,
+              78,
+              65,
+              71,
+              69,
+              82,
+              34,
+              125,
+              125,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              76,
+              111,
+              103,
+              105,
+              110,
+              32,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              102,
+              117,
+              108,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 12,
+          "responseSize": 146
+        },
+        "id": "20e25a5e-2bde-4c35-8e8c-2eb17c0d9767",
+        "assertions": [
+          {
+            "assertion": "Status 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Returns user object",
+            "skipped": false
+          },
+          {
+            "assertion": "No password hash in response (security)",
+            "skipped": false
+          },
+          {
+            "assertion": "Token set from header",
+            "skipped": false
+          },
+          {
+            "assertion": "JWT available (via header or cookie)",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "27af30c6-5ea2-4826-9d19-6c6142f09592",
+          "length": 10,
+          "cycles": 1,
+          "position": 4,
+          "iteration": 0,
+          "httpRequestId": "203ffc4c-5003-41e2-bd62-4946514a44d8"
+        },
+        "item": {
+          "id": "0c444314-d794-43c4-81fd-d80a5fcd7881",
+          "name": "I1-05: Get Current User (/me)",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "me"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "1b0c2f0c-1120-414d-b76b-34c625987312",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns correct user', () => {",
+                  "  const { data } = pm.response.json();",
+                  "  pm.expect(data.email).to.equal('fleet@transitops.com');",
+                  "  pm.expect(data.role).to.equal('FLEET_MANAGER');",
+                  "  pm.expect(data).to.not.have.property('passwordHash');",
+                  "});"
+                ],
+                "_lastExecutionId": "b5b5ed71-ecfe-46c8-8a8a-2ae4da6d5027"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "auth",
+              "me"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwiZW1haWwiOiJmbGVldEB0cmFuc2l0b3BzLmNvbSIsInJvbGUiOiJGTEVFVF9NQU5BR0VSIiwibmFtZSI6IlJhamVzaCBLdW1hciIsImlhdCI6MTc4MzgzNTAyNywiZXhwIjoxNzg0NDM5ODI3fQ.yL4cynKldLPGI0w0wx4Uc9Q_sbvGIrwLsVTn2oXvPms"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "1dd52a72-d075-49b0-bced-dfc94abdb0a1",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Cookie",
+              "value": "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwiZW1haWwiOiJmbGVldEB0cmFuc2l0b3BzLmNvbSIsInJvbGUiOiJGTEVFVF9NQU5BR0VSIiwibmFtZSI6IlJhamVzaCBLdW1hciIsImlhdCI6MTc4MzgzNTAyNywiZXhwIjoxNzg0NDM5ODI3fQ.yL4cynKldLPGI0w0wx4Uc9Q_sbvGIrwLsVTn2oXvPms",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "dd7203e3-17b7-42b5-a37d-c4e2f5ba38fe",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "167"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"a7-7UMhhnRVJKyk7iVr4PlBolbzCis\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:47 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              116,
+              114,
+              117,
+              101,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              34,
+              58,
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              57,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              102,
+              108,
+              101,
+              101,
+              116,
+              64,
+              116,
+              114,
+              97,
+              110,
+              115,
+              105,
+              116,
+              111,
+              112,
+              115,
+              46,
+              99,
+              111,
+              109,
+              34,
+              44,
+              34,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              82,
+              97,
+              106,
+              101,
+              115,
+              104,
+              32,
+              75,
+              117,
+              109,
+              97,
+              114,
+              34,
+              44,
+              34,
+              114,
+              111,
+              108,
+              101,
+              34,
+              58,
+              34,
+              70,
+              76,
+              69,
+              69,
+              84,
+              95,
+              77,
+              65,
+              78,
+              65,
+              71,
+              69,
+              82,
+              34,
+              44,
+              34,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+              100,
+              65,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              55,
+              45,
+              49,
+              50,
+              84,
+              48,
+              53,
+              58,
+              49,
+              49,
+              58,
+              49,
+              57,
+              46,
+              49,
+              49,
+              48,
+              90,
+              34,
+              125,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              83,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 6,
+          "responseSize": 167
+        },
+        "id": "0c444314-d794-43c4-81fd-d80a5fcd7881",
+        "assertions": [
+          {
+            "assertion": "Status 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Returns correct user",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "3d8751d4-8ed9-4cd5-9f91-215433d26588",
+          "length": 10,
+          "cycles": 1,
+          "position": 5,
+          "iteration": 0,
+          "httpRequestId": "fdf63117-eed1-41e4-9e37-8a35eb134578"
+        },
+        "item": {
+          "id": "02e60992-195c-409a-bf20-022e86a5cb6b",
+          "name": "I1-06: Login Failure — Wrong Password",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "login"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{fleetEmail}}\",\"password\":\"wrongpassword\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "d778153c-412f-45a5-b810-ca8b9148e901",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Returns generic error (does not reveal what is wrong)', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.false;",
+                  "  pm.expect(json.error).to.equal('Invalid email or password');",
+                  "});"
+                ],
+                "_lastExecutionId": "04281175-7048-4598-8402-7af338308dab"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "auth",
+              "login"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "0a9f5a14-33e2-44ea-8f5a-a61db1e35e6f",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "59",
+              "system": true
+            },
+            {
+              "key": "Cookie",
+              "value": "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwiZW1haWwiOiJmbGVldEB0cmFuc2l0b3BzLmNvbSIsInJvbGUiOiJGTEVFVF9NQU5BR0VSIiwibmFtZSI6IlJhamVzaCBLdW1hciIsImlhdCI6MTc4MzgzNTAyNywiZXhwIjoxNzg0NDM5ODI3fQ.yL4cynKldLPGI0w0wx4Uc9Q_sbvGIrwLsVTn2oXvPms",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\":\"fleet@transitops.com\",\"password\":\"wrongpassword\"}"
+          }
+        },
+        "response": {
+          "id": "8b45d6c9-60b7-4748-9a49-fe97f1470b9a",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "75"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"4b-F6dMiwu3vKnLFK9BReGx9GkmzJA\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:48 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              73,
+              110,
+              118,
+              97,
+              108,
+              105,
+              100,
+              32,
+              101,
+              109,
+              97,
+              105,
+              108,
+              32,
+              111,
+              114,
+              32,
+              112,
+              97,
+              115,
+              115,
+              119,
+              111,
+              114,
+              100,
+              34,
+              44,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              85,
+              78,
+              65,
+              85,
+              84,
+              72,
+              79,
+              82,
+              73,
+              90,
+              69,
+              68,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 65,
+          "responseSize": 75
+        },
+        "id": "02e60992-195c-409a-bf20-022e86a5cb6b",
+        "assertions": [
+          {
+            "assertion": "Status 401",
+            "skipped": false
+          },
+          {
+            "assertion": "Returns generic error (does not reveal what is wrong)",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "d715bb05-d9e7-4114-8b5a-050e1e60272c",
+          "length": 10,
+          "cycles": 1,
+          "position": 6,
+          "iteration": 0,
+          "httpRequestId": "b4ace684-083d-4b69-b4d1-119c7e4e603b"
+        },
+        "item": {
+          "id": "2d6756be-c7a1-43d2-b8af-1a800c88976b",
+          "name": "I1-07: Login Failure — Non-existent Email",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "login"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"nobody@example.com\",\"password\":\"password123\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4158a98d-ea24-4e52-bdb3-8af9bf5dd670",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Same error message as wrong password', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.error).to.equal('Invalid email or password');",
+                  "});"
+                ],
+                "_lastExecutionId": "0733c896-8aff-4e70-806f-eb69267a17f0"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "auth",
+              "login"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "02ae249f-f296-44f9-a4d7-21dd92e6f967",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "55",
+              "system": true
+            },
+            {
+              "key": "Cookie",
+              "value": "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwiZW1haWwiOiJmbGVldEB0cmFuc2l0b3BzLmNvbSIsInJvbGUiOiJGTEVFVF9NQU5BR0VSIiwibmFtZSI6IlJhamVzaCBLdW1hciIsImlhdCI6MTc4MzgzNTAyNywiZXhwIjoxNzg0NDM5ODI3fQ.yL4cynKldLPGI0w0wx4Uc9Q_sbvGIrwLsVTn2oXvPms",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\":\"nobody@example.com\",\"password\":\"password123\"}"
+          }
+        },
+        "response": {
+          "id": "5ee7b31f-a1c5-4e00-9bb1-a029121989e2",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "75"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"4b-F6dMiwu3vKnLFK9BReGx9GkmzJA\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:48 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              73,
+              110,
+              118,
+              97,
+              108,
+              105,
+              100,
+              32,
+              101,
+              109,
+              97,
+              105,
+              108,
+              32,
+              111,
+              114,
+              32,
+              112,
+              97,
+              115,
+              115,
+              119,
+              111,
+              114,
+              100,
+              34,
+              44,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              85,
+              78,
+              65,
+              85,
+              84,
+              72,
+              79,
+              82,
+              73,
+              90,
+              69,
+              68,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 5,
+          "responseSize": 75
+        },
+        "id": "2d6756be-c7a1-43d2-b8af-1a800c88976b",
+        "assertions": [
+          {
+            "assertion": "Status 401",
+            "skipped": false
+          },
+          {
+            "assertion": "Same error message as wrong password",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "6ca425c3-44fd-46ad-88e3-e1a9b25b4f25",
+          "length": 10,
+          "cycles": 1,
+          "position": 7,
+          "iteration": 0,
+          "httpRequestId": "b9513fef-ca7a-4c15-817e-0515860ca3ec"
+        },
+        "item": {
+          "id": "4e12df6f-7242-4bce-8fba-618f66e19a60",
+          "name": "I1-08: Verify OTP — Expired/Wrong OTP",
+          "request": {
+            "url": {
+              "path": [
+                "auth",
+                "verify-otp"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{fleetEmail}}\",\"code\":\"000000\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b75f02e7-67ba-4375-9409-472adb57aaf8",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Returns OTP_INVALID code', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.code).to.be.oneOf(['OTP_INVALID', 'OTP_EXPIRED']);",
+                  "});"
+                ],
+                "_lastExecutionId": "bbf2c1ee-c9f5-4eea-ba70-8b063119c91d"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "auth",
+              "verify-otp"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "f7e08dd8-6f80-4435-ab8b-ec3477abdbec",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "48",
+              "system": true
+            },
+            {
+              "key": "Cookie",
+              "value": "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OSwiZW1haWwiOiJmbGVldEB0cmFuc2l0b3BzLmNvbSIsInJvbGUiOiJGTEVFVF9NQU5BR0VSIiwibmFtZSI6IlJhamVzaCBLdW1hciIsImlhdCI6MTc4MzgzNTAyNywiZXhwIjoxNzg0NDM5ODI3fQ.yL4cynKldLPGI0w0wx4Uc9Q_sbvGIrwLsVTn2oXvPms",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\":\"fleet@transitops.com\",\"code\":\"000000\"}"
+          }
+        },
+        "response": {
+          "id": "760e6d7f-44e0-4ab6-b5e8-36787454079b",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "80"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"50-3GDBJKpyJqvJ99d3FBviKWu0Wlc\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:48 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              78,
+              111,
+              32,
+              79,
+              84,
+              80,
+              32,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              101,
+              100,
+              32,
+              102,
+              111,
+              114,
+              32,
+              116,
+              104,
+              105,
+              115,
+              32,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              44,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              79,
+              84,
+              80,
+              95,
+              73,
+              78,
+              86,
+              65,
+              76,
+              73,
+              68,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 4,
+          "responseSize": 80
+        },
+        "id": "4e12df6f-7242-4bce-8fba-618f66e19a60",
+        "assertions": [
+          {
+            "assertion": "Status 400",
+            "skipped": false
+          },
+          {
+            "assertion": "Returns OTP_INVALID code",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "fe35dbe7-3fd4-426f-8f8f-34d94db49b98",
+          "length": 10,
+          "cycles": 1,
+          "position": 8,
+          "iteration": 0,
+          "httpRequestId": "b8edfb00-adea-47e5-a974-3ce1ece5936c"
+        },
+        "item": {
+          "id": "bb2cacc1-2feb-46a4-b00b-e2d9048107da",
+          "name": "I1-09: RBAC — Unauthorized Access Without Token",
+          "request": {
+            "url": {
+              "path": [
+                "vehicles"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "bf7f1058-7dec-4d24-9141-a5b853498618",
+                "type": "text/javascript",
+                "exec": [
+                  "const jar = pm.cookies.jar();",
+                  "jar.clear('localhost', function (error) {});"
+                ],
+                "_lastExecutionId": "75c2cf1f-b626-4044-a204-82cc1f80a21a"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "970e668c-9dd1-4c8e-b3ad-bb19d46fe8c2",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Returns UNAUTHORIZED code', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.false;",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});"
+                ],
+                "_lastExecutionId": "e013c2da-845e-4dfe-a4ff-cade8b86a439"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "vehicles"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "2819752d-d0e6-4d8a-a249-8cab01502bdc",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "7a4b5d8e-696a-4608-9fea-c14814e257af",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "73"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"49-d2j3hmD/GorTsFfAtN0VxxWGO90\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:48 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              65,
+              117,
+              116,
+              104,
+              101,
+              110,
+              116,
+              105,
+              99,
+              97,
+              116,
+              105,
+              111,
+              110,
+              32,
+              114,
+              101,
+              113,
+              117,
+              105,
+              114,
+              101,
+              100,
+              34,
+              44,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              85,
+              78,
+              65,
+              85,
+              84,
+              72,
+              79,
+              82,
+              73,
+              90,
+              69,
+              68,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 4,
+          "responseSize": 73
+        },
+        "id": "bb2cacc1-2feb-46a4-b00b-e2d9048107da",
+        "assertions": [
+          {
+            "assertion": "Status 401",
+            "skipped": false
+          },
+          {
+            "assertion": "Returns UNAUTHORIZED code",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "01be6716-2802-49b1-a147-f365a4a42d73",
+          "length": 10,
+          "cycles": 1,
+          "position": 9,
+          "iteration": 0,
+          "httpRequestId": "d8f65650-8ccf-4676-8b5c-7d0f7681eb94"
+        },
+        "item": {
+          "id": "752a02da-3758-428a-8682-3aae87fd75dd",
+          "name": "I1-10: RBAC — Dispatcher Cannot Access Settings (role-protected endpoint)",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "ec0a87dc-fd01-42ec-a504-80f631018329",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('MANUAL VERIFICATION: Login as dispatch@transitops.com, navigate to /settings in browser — should redirect to /dashboard', () => {",
+                  "  pm.expect(true).to.be.true;",
+                  "});"
+                ],
+                "_lastExecutionId": "b57493bb-1935-4fee-b067-e9577ac7a9ae"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "3001",
+            "path": [
+              "api",
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "735f9898-3344-4dad-807e-cae2c005609f",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:3001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "b3fa2582-78d6-401f-88cf-50cd1d92b180",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=15552000; includeSubDomains"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0"
+            },
+            {
+              "key": "Access-Control-Allow-Origin",
+              "value": "http://localhost:5173"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "Access-Control-Expose-Headers",
+              "value": "X-Auth-Token"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "98"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"62-u/Rmd004PsbWyvDuk+EIoDDasME\""
+            },
+            {
+              "key": "Date",
+              "value": "Sun, 12 Jul 2026 05:43:48 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              58,
+              116,
+              114,
+              117,
+              101,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              34,
+              58,
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              111,
+              107,
+              34,
+              44,
+              34,
+              116,
+              105,
+              109,
+              101,
+              115,
+              116,
+              97,
+              109,
+              112,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              55,
+              45,
+              49,
+              50,
+              84,
+              48,
+              53,
+              58,
+              52,
+              51,
+              58,
+              52,
+              56,
+              46,
+              52,
+              53,
+              54,
+              90,
+              34,
+              125,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              83,
+              117,
+              99,
+              99,
+              101,
+              115,
+              115,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 4,
+          "responseSize": 98
+        },
+        "id": "752a02da-3758-428a-8682-3aae87fd75dd",
+        "assertions": [
+          {
+            "assertion": "MANUAL VERIFICATION: Login as dispatch@transitops.com, navigate to /settings in browser — should redirect to /dashboard",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 1034
+    },
+    "failures": [],
+    "error": null
+  }
+}

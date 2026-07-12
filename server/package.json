@@ -32,6 +32,8 @@
     "@types/node": "^20.14.2",
     "@types/node-cron": "^3.0.11",
     "@types/pdfkit": "^0.13.9",
+    "newman": "^6.2.2",
+    "newman-reporter-htmlextra": "^1.23.1",
     "prisma": "^5.14.0",
     "tsx": "^4.15.7",
     "typescript": "^5.4.5"

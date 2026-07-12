@@ -4,8 +4,21 @@ import { authenticate } from '../middleware/auth';
 import { login, verifyOTP, getMe } from '../services/auth.service';
 import { sendSuccess, sendError } from '../utils/response';
 import { badRequest } from '../utils/errors';
+import { prisma } from '../config/prisma';
 
 const router = Router();
+
+// DEVELOPMENT ONLY — never ship this to production
+if (process.env.NODE_ENV !== 'production') {
+  router.get('/dev/otp', async (req: any, res: any): Promise<any> => {
+    const { email } = req.query as { email: string };
+    if (!email) return res.status(400).json({ success: false, error: 'email required' });
+    const otp = await prisma.oTP.findUnique({ where: { email } });
+    if (!otp) return res.status(404).json({ success: false, error: 'No OTP found for this email' });
+    if (otp.expiresAt < new Date()) return res.status(410).json({ success: false, error: 'OTP expired' });
+    return res.json({ success: true, data: { code: otp.code, expiresAt: otp.expiresAt } });
+  });
+}
 
 // ── POST /login ───────────────────────────────────────────────────────────────
 router.post(

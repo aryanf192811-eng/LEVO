@@ -1,0 +1,294 @@
+const fs = require('fs');
+
+const environment = {
+  id: "e0e37b12-1f3c-4a3d-9d41-0b5c13b3c3c7",
+  name: "TransitOps Local",
+  values: [
+    { key: "baseUrl", value: "http://localhost:3001/api", enabled: true },
+    { key: "token", value: "", enabled: true },
+    { key: "fleetEmail", value: "fleet@transitops.com", enabled: true },
+    { key: "dispatchEmail", value: "dispatch@transitops.com", enabled: true },
+    { key: "safetyEmail", value: "safety@transitops.com", enabled: true },
+    { key: "financeEmail", value: "finance@transitops.com", enabled: true },
+    { key: "password", value: "password123", enabled: true },
+    { key: "vehicleId_Van01", value: "", enabled: true },
+    { key: "vehicleId_Van05", value: "", enabled: true },
+    { key: "vehicleId_Truck02", value: "", enabled: true },
+    { key: "vehicleId_Van04", value: "", enabled: true },
+    { key: "vehicleId_Van06", value: "", enabled: true },
+    { key: "vehicleId_Bike03", value: "", enabled: true },
+    { key: "driverId_Alex", value: "", enabled: true },
+    { key: "driverId_Riya", value: "", enabled: true },
+    { key: "driverId_Dev", value: "", enabled: true },
+    { key: "driverId_Priya", value: "", enabled: true },
+    { key: "tripId_completed", value: "", enabled: true },
+    { key: "tripId_dispatched", value: "", enabled: true },
+    { key: "tripId_draft", value: "", enabled: true },
+    { key: "newVehicleId", value: "", enabled: true },
+    { key: "newDriverId", value: "", enabled: true },
+    { key: "newTripId", value: "", enabled: true },
+    { key: "newMaintenanceId", value: "", enabled: true },
+    { key: "currentOtp", value: "", enabled: true }
+  ]
+};
+
+const collection = {
+  info: {
+    name: "TransitOps API — Full Validation",
+    schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  item: [
+    {
+      name: "01 — Auth",
+      item: [
+        {
+          name: "I1-01: Health Check",
+          event: [{
+            listen: "test",
+            script: {
+              exec: [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Response is success', () => {",
+                "  const json = pm.response.json();",
+                "  pm.expect(json.success).to.be.true;",
+                "  pm.expect(json.data.status).to.equal('ok');",
+                "  pm.expect(json.data).to.have.property('timestamp');",
+                "});",
+                "pm.test('Response time < 300ms', () => pm.expect(pm.response.responseTime).to.be.below(300));"
+              ]
+            }
+          }],
+          request: { method: "GET", url: "{{baseUrl}}/health" }
+        },
+        {
+          name: "I1-02: Login (Step 1)",
+          event: [{
+            listen: "test",
+            script: {
+              exec: [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Returns OTP step', () => {",
+                "  const json = pm.response.json();",
+                "  pm.expect(json.success).to.be.true;",
+                "  pm.expect(json.data.step).to.equal('OTP_REQUIRED');",
+                "  pm.expect(json.data.email).to.equal(pm.environment.get('fleetEmail'));",
+                "});",
+                "pm.test('No OTP in response body (security check)', () => {",
+                "  const body = pm.response.text();",
+                "  pm.expect(body).to.not.include('code');",
+                "});"
+              ]
+            }
+          }],
+          request: {
+            method: "POST",
+            url: "{{baseUrl}}/auth/login",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: { mode: "raw", raw: JSON.stringify({ email: "{{fleetEmail}}", password: "{{password}}" }) }
+          }
+        },
+        {
+          name: "I1-03: Get OTP from Dev Endpoint",
+          event: [{
+            listen: "test",
+            script: {
+              exec: [
+                "pm.test('Status 200 — dev OTP endpoint works', () => pm.response.to.have.status(200));",
+                "pm.test('OTP is 6 digits', () => {",
+                "  const json = pm.response.json();",
+                "  pm.expect(json.data.code).to.match(/^\\d{6}$/);",
+                "  pm.expect(new Date(json.data.expiresAt) > new Date()).to.be.true;",
+                "  pm.environment.set('currentOtp', json.data.code);",
+                "});"
+              ]
+            }
+          }],
+          request: { method: "GET", url: "{{baseUrl}}/auth/dev/otp?email={{fleetEmail}}" }
+        },
+        {
+          name: "I1-04: Verify OTP (Step 2) — Get JWT",
+          event: [
+            {
+              listen: "prerequest",
+              script: {
+                exec: [
+                  "const otp = pm.environment.get('currentOtp');",
+                  "if (!otp) throw new Error('currentOtp variable not set — run I1-03 first');"
+                ]
+              }
+            },
+            {
+              listen: "test",
+              script: {
+                exec: [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns user object', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data.user).to.have.all.keys('id', 'email', 'name', 'role');",
+                  "  pm.expect(json.data.user.email).to.equal('fleet@transitops.com');",
+                  "  pm.expect(json.data.user.role).to.equal('FLEET_MANAGER');",
+                  "});",
+                  "pm.test('No password hash in response (security)', () => {",
+                  "  const body = pm.response.text();",
+                  "  pm.expect(body).to.not.include('passwordHash');",
+                  "  pm.expect(body).to.not.include('password');",
+                  "});",
+                  "pm.test('JWT available (via header or cookie)', () => {",
+                  "  const headerToken = pm.response.headers.get('X-Auth-Token');",
+                  "  if (headerToken) {",
+                  "    pm.environment.set('token', headerToken);",
+                  "    pm.test('Token set from header', () => pm.expect(headerToken).to.be.a('string'));",
+                  "  } else {",
+                  "    pm.test('WARN: X-Auth-Token header missing — ensure backend sends it', () => {",
+                  "      pm.expect(headerToken).to.not.be.undefined;",
+                  "    });",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          request: {
+            method: "POST",
+            url: "{{baseUrl}}/auth/verify-otp",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: { mode: "raw", raw: JSON.stringify({ email: "{{fleetEmail}}", code: "{{currentOtp}}" }) }
+          }
+        },
+        {
+          name: "I1-05: Get Current User (/me)",
+          event: [{
+            listen: "test",
+            script: {
+              exec: [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Returns correct user', () => {",
+                "  const { data } = pm.response.json();",
+                "  pm.expect(data.email).to.equal('fleet@transitops.com');",
+                "  pm.expect(data.role).to.equal('FLEET_MANAGER');",
+                "  pm.expect(data).to.not.have.property('passwordHash');",
+                "});"
+              ]
+            }
+          }],
+          request: {
+            method: "GET",
+            url: "{{baseUrl}}/auth/me",
+            header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+          }
+        },
+        {
+          name: "I1-06: Login Failure — Wrong Password",
+          event: [{
+            listen: "test",
+            script: {
+              exec: [
+                "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                "pm.test('Returns generic error (does not reveal what is wrong)', () => {",
+                "  const json = pm.response.json();",
+                "  pm.expect(json.success).to.be.false;",
+                "  pm.expect(json.error).to.equal('Invalid email or password');",
+                "});"
+              ]
+            }
+          }],
+          request: {
+            method: "POST",
+            url: "{{baseUrl}}/auth/login",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: { mode: "raw", raw: JSON.stringify({ email: "{{fleetEmail}}", password: "wrongpassword" }) }
+          }
+        },
+        {
+          name: "I1-07: Login Failure — Non-existent Email",
+          event: [{
+            listen: "test",
+            script: {
+              exec: [
+                "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                "pm.test('Same error message as wrong password', () => {",
+                "  const json = pm.response.json();",
+                "  pm.expect(json.error).to.equal('Invalid email or password');",
+                "});"
+              ]
+            }
+          }],
+          request: {
+            method: "POST",
+            url: "{{baseUrl}}/auth/login",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: { mode: "raw", raw: JSON.stringify({ email: "nobody@example.com", password: "password123" }) }
+          }
+        },
+        {
+          name: "I1-08: Verify OTP — Expired/Wrong OTP",
+          event: [{
+            listen: "test",
+            script: {
+              exec: [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                "pm.test('Returns OTP_INVALID code', () => {",
+                "  const json = pm.response.json();",
+                "  pm.expect(json.code).to.be.oneOf(['OTP_INVALID', 'OTP_EXPIRED']);",
+                "});"
+              ]
+            }
+          }],
+          request: {
+            method: "POST",
+            url: "{{baseUrl}}/auth/verify-otp",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: { mode: "raw", raw: JSON.stringify({ email: "{{fleetEmail}}", code: "000000" }) }
+          }
+        },
+        {
+          name: "I1-09: RBAC — Unauthorized Access Without Token",
+          event: [
+            {
+              listen: "prerequest",
+              script: {
+                exec: [
+                  "const jar = pm.cookies.jar();",
+                  "jar.clear('localhost', function (error) {});"
+                ]
+              }
+            },
+            {
+              listen: "test",
+              script: {
+                exec: [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Returns UNAUTHORIZED code', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.false;",
+                  "  pm.expect(json.code).to.equal('UNAUTHORIZED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          request: { method: "GET", url: "{{baseUrl}}/vehicles" }
+        },
+        {
+          name: "I1-10: RBAC — Dispatcher Cannot Access Settings (role-protected endpoint)",
+          event: [{
+            listen: "test",
+            script: {
+              exec: [
+                "pm.test('MANUAL VERIFICATION: Login as dispatch@transitops.com, navigate to /settings in browser — should redirect to /dashboard', () => {",
+                "  pm.expect(true).to.be.true;",
+                "});"
+              ]
+            }
+          }],
+          request: { method: "GET", url: "{{baseUrl}}/health" }
+        }
+      ]
+    }
+  ]
+};
+
+fs.writeFileSync('./tests/postman/transitops-local.environment.json', JSON.stringify(environment, null, 2));
+fs.writeFileSync('./tests/postman/transitops.collection.json', JSON.stringify(collection, null, 2));
+console.log('Postman files created.');

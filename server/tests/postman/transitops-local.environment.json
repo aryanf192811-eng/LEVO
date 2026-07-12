@@ -1,0 +1,131 @@
+{
+  "id": "e0e37b12-1f3c-4a3d-9d41-0b5c13b3c3c7",
+  "name": "TransitOps Local",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "fleetEmail",
+      "value": "fleet@transitops.com",
+      "enabled": true
+    },
+    {
+      "key": "dispatchEmail",
+      "value": "dispatch@transitops.com",
+      "enabled": true
+    },
+    {
+      "key": "safetyEmail",
+      "value": "safety@transitops.com",
+      "enabled": true
+    },
+    {
+      "key": "financeEmail",
+      "value": "finance@transitops.com",
+      "enabled": true
+    },
+    {
+      "key": "password",
+      "value": "password123",
+      "enabled": true
+    },
+    {
+      "key": "vehicleId_Van01",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "vehicleId_Van05",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "vehicleId_Truck02",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "vehicleId_Van04",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "vehicleId_Van06",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "vehicleId_Bike03",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "driverId_Alex",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "driverId_Riya",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "driverId_Dev",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "driverId_Priya",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "tripId_completed",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "tripId_dispatched",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "tripId_draft",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "newVehicleId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "newDriverId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "newTripId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "newMaintenanceId",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "currentOtp",
+      "value": "",
+      "enabled": true
+    }
+  ]
+}

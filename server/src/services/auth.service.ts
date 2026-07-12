@@ -44,7 +44,7 @@ export const verifyOTP = async (
   code: string,
 ): Promise<{ user: SafeUser; token: string }> => {
   const otp = await prisma.oTP.findUnique({ where: { email } });
-  if (!otp) throw badRequest('No OTP requested for this email');
+  if (!otp) throw badRequest('No OTP requested for this email', 'OTP_INVALID');
 
   if (otp.expiresAt < new Date()) {
     throw badRequest('OTP has expired. Please login again.', 'OTP_EXPIRED');
@@ -71,7 +71,6 @@ export const verifyOTP = async (
       email: user.email,
       name: user.name,
       role: user.role,
-      createdAt: user.createdAt,
     },
     token,
   };
