@@ -51,30 +51,28 @@ export const register = async (
 export const login = async (
   email: string,
   password: string,
-): Promise<{ step: 'OTP_REQUIRED'; email: string; devOtp?: string }> => {
+): Promise<{ user: SafeUser; token: string }> => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw unauthorized('Invalid email or password');
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw unauthorized('Invalid email or password');
 
-  const code = generateOTP();
-  const expiresAt = getOTPExpiry();
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role: user.role, name: user.name },
+    process.env.JWT_SECRET!,
+    { expiresIn: process.env.JWT_EXPIRES_IN as any },
+  );
 
-  await prisma.oTP.upsert({
-    where: { email },
-    update: { code, expiresAt },
-    create: { email, code, expiresAt },
-  });
-
-  // CRITICAL: OTP is ONLY exposed here — never returned in the HTTP response
-  console.log(`\n[DEV] OTP for ${email}: ${code}\n`);
-
-  const response: any = { step: 'OTP_REQUIRED', email };
-  if (process.env.NODE_ENV !== 'production') {
-    response.devOtp = code;
-  }
-  return response;
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    },
+    token,
+  };
 };
 
 // ── forgotPassword ──────────────────────────────────────────────────────────

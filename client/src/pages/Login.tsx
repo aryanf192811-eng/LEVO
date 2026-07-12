@@ -47,9 +47,8 @@ export default function Login() {
   const onSubmitLogin = async (data: LoginForm) => {
     setErrorMsg('')
     try {
-      const res = await login(data.email, data.password)
-      setVerifiedEmail(res.email)
-      setStep('otp')
+      await login(data.email, data.password)
+      navigate('/dashboard')
     } catch (err) {
       setErrorMsg(getErrorMessage(err))
     }

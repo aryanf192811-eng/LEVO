@@ -49,14 +49,11 @@ pendingOtpEmail: null,
   login: async (email, password) => {
     set({ isLoading: true })
     try {
-      const data = await api.post<{ step: string; email: string; devOtp?: string }>(
+      const data = await api.post<{ user: User }>(
         '/auth/login', { email, password }
       )
-      if (data.devOtp) {
-        console.warn(`[DEV ONLY] Your OTP is: ${data.devOtp}`);
-      }
-      set({ pendingOtpEmail: data.email, isLoading: false })
-      return { email: data.email }
+      set({ user: data.user, isAuthenticated: true, pendingOtpEmail: null, isLoading: false })
+      return { email: data.user.email }
     } catch (err) {
       set({ isLoading: false })
       throw err
