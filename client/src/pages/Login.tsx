@@ -13,22 +13,50 @@ const loginSchema = z.object({
 })
 type LoginForm = z.infer<typeof loginSchema>
 
+const signupSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Enter valid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  role: z.enum(['FLEET_MANAGER', 'DISPATCHER', 'SAFETY_OFFICER', 'FINANCIAL_ANALYST'], { required_error: 'Role is required' })
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+type SignupForm = z.infer<typeof signupSchema>
+
 export default function Login() {
-  const [step, setStep] = useState<'credentials' | 'otp'>('credentials')
+  const [step, setStep] = useState<'login' | 'signup' | 'otp'>('login')
   const [verifiedEmail, setVerifiedEmail] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
-  const { login, verifyOtp, isLoading } = useAuthStore()
+  const { login, verifyOtp, register: registerUser, isLoading } = useAuthStore()
   const navigate = useNavigate()
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema)
   })
 
+  const { register: registerSignup, handleSubmit: handleSignupSubmit, formState: { errors: signupErrors } } = useForm<SignupForm>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: { role: 'FLEET_MANAGER' }
+  })
+
   const onSubmitLogin = async (data: LoginForm) => {
     setErrorMsg('')
     try {
       const res = await login(data.email, data.password)
+      setVerifiedEmail(res.email)
+      setStep('otp')
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err))
+    }
+  }
+
+  const onSubmitSignup = async (data: SignupForm) => {
+    setErrorMsg('')
+    try {
+      const res = await registerUser(data.name, data.email, data.password, data.role)
       setVerifiedEmail(res.email)
       setStep('otp')
     } catch (err) {
@@ -106,7 +134,7 @@ export default function Login() {
       <div className="flex-1 flex flex-col justify-center items-center p-6">
         <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-sm border border-slate-100 p-8 sm:p-10 transition-all duration-300">
           
-          {step === 'credentials' ? (
+          {step === 'login' ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-[28px] font-bold text-slate-900 mb-2 tracking-tight">Sign in to your account</h2>
               <p className="text-slate-500 mb-8">Enter your details to access the dashboard</p>
@@ -147,6 +175,93 @@ export default function Login() {
                   {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   Sign In
                 </button>
+                <div className="text-center mt-4">
+                  <button type="button" onClick={() => setStep('signup')} className="text-slate-500 text-[13px] hover:text-slate-800 transition-colors">
+                    Don't have an account? Create one
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : step === 'signup' ? (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-[28px] font-bold text-slate-900 mb-2 tracking-tight">Create an account</h2>
+              <p className="text-slate-500 mb-6">Enter your details to register</p>
+              
+              <form onSubmit={handleSignupSubmit(onSubmitSignup)} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium text-slate-700">Full Name</label>
+                  <input 
+                    type="text" 
+                    {...registerSignup('name')} 
+                    className="w-full h-11 px-3 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors placeholder:text-slate-400"
+                    placeholder="John Doe"
+                  />
+                  {signupErrors.name && <p className="text-red-500 text-xs mt-1">{signupErrors.name.message}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium text-slate-700">Email address</label>
+                  <input 
+                    type="email" 
+                    {...registerSignup('email')} 
+                    className="w-full h-11 px-3 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors placeholder:text-slate-400"
+                    placeholder="name@transitops.com"
+                  />
+                  {signupErrors.email && <p className="text-red-500 text-xs mt-1">{signupErrors.email.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium text-slate-700">Role</label>
+                  <select 
+                    {...registerSignup('role')} 
+                    className="w-full h-11 px-3 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                  >
+                    <option value="FLEET_MANAGER">Fleet Manager</option>
+                    <option value="DISPATCHER">Dispatcher</option>
+                    <option value="SAFETY_OFFICER">Safety Officer</option>
+                    <option value="FINANCIAL_ANALYST">Financial Analyst</option>
+                  </select>
+                  {signupErrors.role && <p className="text-red-500 text-xs mt-1">{signupErrors.role.message}</p>}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium text-slate-700">Password</label>
+                    <input 
+                      type="password" 
+                      {...registerSignup('password')} 
+                      className="w-full h-11 px-3 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors placeholder:text-slate-400"
+                      placeholder="••••••••"
+                    />
+                    {signupErrors.password && <p className="text-red-500 text-xs mt-1">{signupErrors.password.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium text-slate-700">Confirm Password</label>
+                    <input 
+                      type="password" 
+                      {...registerSignup('confirmPassword')} 
+                      className="w-full h-11 px-3 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors placeholder:text-slate-400"
+                      placeholder="••••••••"
+                    />
+                    {signupErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{signupErrors.confirmPassword.message}</p>}
+                  </div>
+                </div>
+
+                {errorMsg && <div className="text-red-500 text-sm p-3 bg-red-50 rounded-lg">{errorMsg}</div>}
+
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold text-[15px] transition-colors flex items-center justify-center gap-2 mt-2"
+                >
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Sign Up
+                </button>
+                <div className="text-center mt-4">
+                  <button type="button" onClick={() => setStep('login')} className="text-slate-500 text-[13px] hover:text-slate-800 transition-colors">
+                    Already have an account? Sign in
+                  </button>
+                </div>
               </form>
             </div>
           ) : (
@@ -185,7 +300,7 @@ export default function Login() {
                 </button>
                 
                 <div className="text-center">
-                  <button type="button" onClick={() => setStep('credentials')} className="text-slate-500 text-sm hover:text-slate-800 transition-colors">
+                  <button type="button" onClick={() => setStep('login')} className="text-slate-500 text-sm hover:text-slate-800 transition-colors">
                     Back to login
                   </button>
                 </div>

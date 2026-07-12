@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticate } from '../middleware/auth';
-import { login, verifyOTP, getMe } from '../services/auth.service';
+import { login, verifyOTP, getMe, register } from '../services/auth.service';
 import { sendSuccess, sendError } from '../utils/response';
 import { badRequest } from '../utils/errors';
 import { prisma } from '../config/prisma';
@@ -19,6 +19,30 @@ if (process.env.NODE_ENV !== 'production') {
     return res.json({ success: true, data: { code: otp.code, expiresAt: otp.expiresAt } });
   });
 }
+
+// ── POST /register ────────────────────────────────────────────────────────────
+router.post(
+  '/register',
+  [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Valid email required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('role').isIn(['FLEET_MANAGER', 'DISPATCHER', 'SAFETY_OFFICER', 'FINANCIAL_ANALYST']).withMessage('Invalid role'),
+  ],
+  async (req: any, res: any) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return sendError(res, badRequest(errors.array()[0].msg));
+    }
+    try {
+      const { name, email, password, role } = req.body;
+      const result = await register(name, email, password, role);
+      sendSuccess(res, result, 'Account created. Check server console for OTP.');
+    } catch (err) {
+      sendError(res, err);
+    }
+  },
+);
 
 // ── POST /login ───────────────────────────────────────────────────────────────
 router.post(

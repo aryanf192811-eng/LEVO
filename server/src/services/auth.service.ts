@@ -1,8 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/prisma';
-import { unauthorized, badRequest, notFound } from '../utils/errors';
+import { unauthorized, badRequest, notFound, conflict } from '../utils/errors';
 import { generateOTP, getOTPExpiry } from '../utils/otp';
+import { UserRole } from '@prisma/client';
 
 export type SafeUser = {
   id: number;
@@ -10,6 +11,36 @@ export type SafeUser = {
   name: string;
   role: string;
   createdAt?: Date;
+};
+
+// ── register ──────────────────────────────────────────────────────────────────
+export const register = async (
+  name: string,
+  email: string,
+  password: string,
+  role: string
+): Promise<{ step: 'OTP_REQUIRED'; email: string }> => {
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) throw conflict('Email already registered', 'EMAIL_TAKEN');
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await prisma.user.create({
+    data: { name, email, passwordHash, role: role as UserRole }
+  });
+
+  const code = generateOTP();
+  const expiresAt = getOTPExpiry();
+
+  await prisma.oTP.upsert({
+    where: { email },
+    update: { code, expiresAt },
+    create: { email, code, expiresAt },
+  });
+
+  console.log(`\n[DEV] OTP for ${email} (Signup): ${code}\n`);
+
+  return { step: 'OTP_REQUIRED', email };
 };
 
 // ── login ─────────────────────────────────────────────────────────────────────

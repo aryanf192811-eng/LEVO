@@ -10,6 +10,7 @@ isLoading: boolean
 pendingOtpEmail: string | null
 
 // Actions
+register:  (name: string, email: string, password: string, role: string) => Promise<{ email: string }>
 login:     (email: string, password: string) => Promise<{ email: string }>
 verifyOtp: (email: string, code: string) => Promise<void>
 logout:    () => Promise<void>
@@ -24,6 +25,20 @@ user: null,
 isAuthenticated: false,
 isLoading: false,
 pendingOtpEmail: null,
+
+  register: async (name, email, password, role) => {
+    set({ isLoading: true })
+    try {
+      const data = await api.post<{ step: string; email: string }>(
+        '/auth/register', { name, email, password, role }
+      )
+      set({ pendingOtpEmail: data.email, isLoading: false })
+      return { email: data.email }
+    } catch (err) {
+      set({ isLoading: false })
+      throw err
+    }
+  },
 
   login: async (email, password) => {
     set({ isLoading: true })
