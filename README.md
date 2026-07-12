@@ -23,7 +23,6 @@
 
 ## Architecture Diagram
 
-```svg
 <svg width="700" height="400" viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Arial, sans-serif">
   <!-- Background -->
   <rect width="700" height="400" fill="#f8fafc" />
@@ -73,7 +72,6 @@
     </marker>
   </defs>
 </svg>
-```
 
 ---
 
@@ -118,7 +116,6 @@
 
 ## System Architecture & Database Schema
 
-```svg
 <svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Arial, sans-serif">
   <rect width="800" height="500" fill="#f8fafc" />
   
@@ -200,13 +197,11 @@
     <path d="M 450 340 L 450 365 L 590 365 L 590 390" />
   </g>
 </svg>
-```
 
 ---
 
 ## Trip Lifecycle State Machine
 
-```svg
 <svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Arial, sans-serif">
   <rect width="600" height="200" fill="#f8fafc" />
   
@@ -252,7 +247,6 @@
     </marker>
   </defs>
 </svg>
-```
 
 ---
 
@@ -640,7 +634,6 @@ Available API endpoints compute deep aggregations directly at the database level
 
 ## UI Layout Mockup
 
-```svg
 <svg width="700" height="400" viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Arial, sans-serif">
   <!-- Background Base -->
   <rect width="700" height="400" fill="#f8fafc" />
@@ -696,7 +689,6 @@ Available API endpoints compute deep aggregations directly at the database level
   <path d="M 600 240 A 45 45 0 0 1 645 285" fill="none" stroke="#10b981" stroke-width="20" />
   <path d="M 645 285 A 45 45 0 0 1 600 330" fill="none" stroke="#3b82f6" stroke-width="20" />
 </svg>
-```
 
 ---
 
