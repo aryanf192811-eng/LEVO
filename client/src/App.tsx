@@ -43,6 +43,8 @@ if (!user || !roles.includes(user.role)) return <Navigate to="/dashboard" replac
 return <>{children}</>
 }
 
+import { ToastProvider } from '@/components/common/Toast'
+
 export default function App() {
 const checkAuth = useAuthStore(s => s.checkAuth)
 
@@ -52,32 +54,34 @@ checkAuth()  // Verify JWT cookie on app load / refresh
 
 return (
 <QueryClientProvider client={queryClient}>
-<BrowserRouter>
-<Routes>
-<Route path="/login" element={<Login />} />
+  <ToastProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
-      <Route path="/" element={<Protected><AppLayout /></Protected>}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard"   element={<Dashboard />} />
-        <Route path="vehicles"    element={<Vehicles />} />
-        <Route path="vehicles/:id" element={<VehicleDetail />} />
-        <Route path="drivers"     element={<Drivers />} />
-        <Route path="drivers/:id"  element={<DriverDetail />} />
-        <Route path="trips"       element={<Trips />} />
-        <Route path="trips/:id"   element={<TripDetail />} />
-        <Route path="maintenance" element={<Maintenance />} />
-        <Route path="fuel-expenses" element={<FuelExpenses />} />
-        <Route path="analytics"   element={<Analytics />} />
-        <Route path="settings"    element={
-          <RoleGuard roles={['FLEET_MANAGER']}>
-            <Settings />
-          </RoleGuard>
-        } />
-      </Route>
+        <Route path="/" element={<Protected><AppLayout /></Protected>}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard"   element={<Dashboard />} />
+          <Route path="vehicles"    element={<Vehicles />} />
+          <Route path="vehicles/:id" element={<VehicleDetail />} />
+          <Route path="drivers"     element={<Drivers />} />
+          <Route path="drivers/:id"  element={<DriverDetail />} />
+          <Route path="trips"       element={<Trips />} />
+          <Route path="trips/:id"   element={<TripDetail />} />
+          <Route path="maintenance" element={<Maintenance />} />
+          <Route path="fuel-expenses" element={<FuelExpenses />} />
+          <Route path="analytics"   element={<Analytics />} />
+          <Route path="settings"    element={
+            <RoleGuard roles={['FLEET_MANAGER']}>
+              <Settings />
+            </RoleGuard>
+          } />
+        </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
-  </BrowserRouter>
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
+  </ToastProvider>
 </QueryClientProvider>
 
 )
