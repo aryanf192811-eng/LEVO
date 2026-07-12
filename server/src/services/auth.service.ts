@@ -62,7 +62,7 @@ export const verifyOTP = async (
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role, name: user.name },
     process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN as string },
+    { expiresIn: process.env.JWT_EXPIRES_IN as any },
   );
 
   return {
