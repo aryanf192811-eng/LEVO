@@ -1,0 +1,88 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../config/prisma';
+import { unauthorized, badRequest, notFound } from '../utils/errors';
+import { generateOTP, getOTPExpiry } from '../utils/otp';
+
+export type SafeUser = {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+  createdAt: Date;
+};
+
+// ── login ─────────────────────────────────────────────────────────────────────
+export const login = async (
+  email: string,
+  password: string,
+): Promise<{ step: 'OTP_REQUIRED'; email: string }> => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw unauthorized('Invalid email or password');
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) throw unauthorized('Invalid email or password');
+
+  const code = generateOTP();
+  const expiresAt = getOTPExpiry();
+
+  await prisma.oTP.upsert({
+    where: { email },
+    update: { code, expiresAt },
+    create: { email, code, expiresAt },
+  });
+
+  // CRITICAL: OTP is ONLY exposed here — never returned in the HTTP response
+  console.log(`\n[DEV] OTP for ${email}: ${code}\n`);
+
+  return { step: 'OTP_REQUIRED', email };
+};
+
+// ── verifyOTP ─────────────────────────────────────────────────────────────────
+export const verifyOTP = async (
+  email: string,
+  code: string,
+): Promise<{ user: SafeUser; token: string }> => {
+  const otp = await prisma.oTP.findUnique({ where: { email } });
+  if (!otp) throw badRequest('No OTP requested for this email');
+
+  if (otp.expiresAt < new Date()) {
+    throw badRequest('OTP has expired. Please login again.', 'OTP_EXPIRED');
+  }
+
+  if (otp.code !== code) {
+    throw badRequest('Invalid OTP', 'OTP_INVALID');
+  }
+
+  await prisma.oTP.delete({ where: { email } });
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw unauthorized('User not found');
+
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role: user.role, name: user.name },
+    process.env.JWT_SECRET!,
+    { expiresIn: process.env.JWT_EXPIRES_IN as string },
+  );
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      createdAt: user.createdAt,
+    },
+    token,
+  };
+};
+
+// ── getMe ─────────────────────────────────────────────────────────────────────
+export const getMe = async (userId: number): Promise<SafeUser> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, role: true, createdAt: true },
+  });
+  if (!user) throw notFound('User not found');
+  return user;
+};
