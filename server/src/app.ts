@@ -6,9 +6,12 @@ import cookieParser from 'cookie-parser';
 
 import { sendSuccess, sendError } from './utils/response';
 import { notFound } from './utils/errors';
-import authRouter from './routes/auth.routes';         // B4
-import vehiclesRouter from './routes/vehicles.routes'; // B5
-import driversRouter from './routes/drivers.routes';   // B5
+import authRouter from './routes/auth.routes';             // B4
+import vehiclesRouter from './routes/vehicles.routes';     // B5
+import driversRouter from './routes/drivers.routes';       // B5
+import tripsRouter from './routes/trips.routes';           // B6
+import maintenanceRouter from './routes/maintenance.routes'; // B6
+import financialRouter from './routes/financial.routes';   // B7
 
 const app = express();
 
@@ -23,9 +26,9 @@ app.use(cookieParser());
 app.use('/api/auth',     authRouter);     // B4
 app.use('/api/vehicles', vehiclesRouter); // B5
 app.use('/api/drivers',  driversRouter);  // B5
-// app.use('/api/trips',         tripsRouter)        ← B6
-// app.use('/api/maintenance',   maintenanceRouter)  ← B6
-// app.use('/api/financial',     financialRouter)    ← B7
+app.use('/api/trips',         tripsRouter);       // B6
+app.use('/api/maintenance',   maintenanceRouter); // B6
+app.use('/api/financial',     financialRouter);   // B7
 // app.use('/api/weather',       weatherRouter)      ← B8
 // app.use('/api/notifications', notificationRouter) ← B8
 // app.use('/api/dashboard',     dashboardRouter)    ← B9
