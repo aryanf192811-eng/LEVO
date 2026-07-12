@@ -9,7 +9,15 @@ export const createNotification = async (data: {
   message: string;
   metadata?: Record<string, unknown>;
 }) => {
-  return prisma.notification.create({ data });
+  return prisma.notification.create({
+    data: {
+      userId: data.userId ?? null,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      metadata: data.metadata ? (data.metadata as any) : undefined,
+    },
+  });
 };
 
 // ── listNotifications ─────────────────────────────────────────────────────────

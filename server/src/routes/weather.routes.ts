@@ -14,7 +14,7 @@ import { badRequest } from '../utils/errors';
 export const weatherRouter = Router();
 
 // GET /api/weather/assess?source=Mumbai&destination=Delhi
-weatherRouter.get('/assess', authenticate, async (req, res) => {
+weatherRouter.get('/assess', authenticate, async (req: any, res: any) => {
   const { source, destination } = req.query as { source?: string; destination?: string };
 
   if (!source || !destination) {
@@ -39,7 +39,7 @@ weatherRouter.get('/assess', authenticate, async (req, res) => {
 export const notificationRouter = Router();
 
 // GET /api/notifications
-notificationRouter.get('/', authenticate, async (req, res) => {
+notificationRouter.get('/', authenticate, async (req: any, res: any) => {
   try {
     const notifications = await listNotifications(req.user!.id);
     sendSuccess(res, notifications);
@@ -47,7 +47,7 @@ notificationRouter.get('/', authenticate, async (req, res) => {
 });
 
 // GET /api/notifications/unread-count  (before /:id to avoid capture)
-notificationRouter.get('/unread-count', authenticate, async (req, res) => {
+notificationRouter.get('/unread-count', authenticate, async (req: any, res: any) => {
   try {
     const count = await getUnreadCount(req.user!.id);
     sendSuccess(res, { count });
@@ -55,7 +55,7 @@ notificationRouter.get('/unread-count', authenticate, async (req, res) => {
 });
 
 // PATCH /api/notifications/read-all  (before /:id/read to avoid capture)
-notificationRouter.patch('/read-all', authenticate, async (req, res) => {
+notificationRouter.patch('/read-all', authenticate, async (req: any, res: any) => {
   try {
     await markAllAsRead(req.user!.id);
     sendSuccess(res, null, 'All notifications marked as read');
@@ -63,7 +63,7 @@ notificationRouter.patch('/read-all', authenticate, async (req, res) => {
 });
 
 // PATCH /api/notifications/:id/read
-notificationRouter.patch('/:id/read', authenticate, async (req, res) => {
+notificationRouter.patch('/:id/read', authenticate, async (req: any, res: any) => {
   try {
     const notification = await markAsRead(Number(req.params.id));
     sendSuccess(res, notification, 'Notification marked as read');

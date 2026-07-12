@@ -16,7 +16,7 @@ import { badRequest } from '../utils/errors';
 const router = Router();
 
 // GET /api/drivers
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req: any, res: any) => {
   try {
     const drivers = await listDrivers({
       status:          req.query.status          as string | undefined,
@@ -53,7 +53,7 @@ router.get('/expiring', authenticate, async (_req, res) => {
 });
 
 // GET /api/drivers/:id
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, async (req: any, res: any) => {
   try {
     const driver = await getDriverById(Number(req.params.id));
     sendSuccess(res, driver);
@@ -75,7 +75,7 @@ router.post(
     body('contactNumber').notEmpty().withMessage('contactNumber required'),
     body('safetyScore').optional().isFloat({ min: 0, max: 100 }),
   ],
-  async (req, res) => {
+  async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return sendError(res, badRequest(errors.array()[0].msg));
     try {
@@ -100,7 +100,7 @@ router.put(
     body('contactNumber').optional().notEmpty(),
     body('safetyScore').optional().isFloat({ min: 0, max: 100 }),
   ],
-  async (req, res) => {
+  async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return sendError(res, badRequest(errors.array()[0].msg));
     try {
@@ -123,7 +123,7 @@ router.post(
       .withMessage('delta must be between -100 and 100'),
     body('reason').notEmpty().withMessage('reason required'),
   ],
-  async (req, res) => {
+  async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return sendError(res, badRequest(errors.array()[0].msg));
     try {

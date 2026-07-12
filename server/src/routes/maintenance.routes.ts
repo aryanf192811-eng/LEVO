@@ -14,7 +14,7 @@ import { badRequest } from '../utils/errors';
 const router = Router();
 
 // GET /api/maintenance
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req: any, res: any) => {
   try {
     const logs = await listMaintenance({
       vehicleId: req.query.vehicleId ? Number(req.query.vehicleId) : undefined,
@@ -35,7 +35,7 @@ router.post(
     body('description').notEmpty().withMessage('description required'),
     body('cost').optional().isFloat({ min: 0 }).withMessage('cost must be >= 0'),
   ],
-  async (req, res) => {
+  async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return sendError(res, badRequest(errors.array()[0].msg));
     try {
@@ -46,7 +46,7 @@ router.post(
 );
 
 // GET /api/maintenance/:id
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, async (req: any, res: any) => {
   try {
     const log = await getMaintenanceById(Number(req.params.id));
     sendSuccess(res, log);
@@ -54,7 +54,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // PATCH /api/maintenance/:id/close
-router.patch('/:id/close', authenticate, requireRole('FLEET_MANAGER'), async (req, res) => {
+router.patch('/:id/close', authenticate, requireRole('FLEET_MANAGER'), async (req: any, res: any) => {
   try {
     const result = await closeMaintenance(Number(req.params.id));
     sendSuccess(res, result, 'Maintenance closed — vehicle returned to service');

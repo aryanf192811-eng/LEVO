@@ -25,7 +25,7 @@ const vehicleBodyValidators = [
 ];
 
 // GET /api/vehicles
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req: any, res: any) => {
   try {
     const vehicles = await listVehicles({
       status: req.query.status as string | undefined,
@@ -50,7 +50,7 @@ router.get('/dispatchable', authenticate, async (_req, res) => {
 });
 
 // GET /api/vehicles/:id
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, async (req: any, res: any) => {
   try {
     const vehicle = await getVehicleById(Number(req.params.id));
     sendSuccess(res, vehicle);
@@ -65,7 +65,7 @@ router.post(
   authenticate,
   requireRole('FLEET_MANAGER'),
   vehicleBodyValidators,
-  async (req, res) => {
+  async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return sendError(res, badRequest(errors.array()[0].msg));
     try {
@@ -83,7 +83,7 @@ router.put(
   authenticate,
   requireRole('FLEET_MANAGER'),
   vehicleBodyValidators.map((v) => v.optional()),
-  async (req, res) => {
+  async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return sendError(res, badRequest(errors.array()[0].msg));
     try {
@@ -96,7 +96,7 @@ router.put(
 );
 
 // DELETE /api/vehicles/:id
-router.delete('/:id', authenticate, requireRole('FLEET_MANAGER'), async (req, res) => {
+router.delete('/:id', authenticate, requireRole('FLEET_MANAGER'), async (req: any, res: any) => {
   try {
     await deleteVehicle(Number(req.params.id));
     sendSuccess(res, null, 'Vehicle deleted');

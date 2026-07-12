@@ -17,35 +17,35 @@ import { prisma } from '../config/prisma';
 const router = Router();
 
 // ── KPIs ──────────────────────────────────────────────────────────────────────
-router.get('/kpis', authenticate, async (req, res) => {
+router.get('/kpis', authenticate, async (req: any, res: any) => {
   try {
     sendSuccess(res, await getKPIs());
   } catch (err) { sendError(res, err); }
 });
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
-router.get('/analytics/fuel-efficiency', authenticate, async (req, res) => {
+router.get('/analytics/fuel-efficiency', authenticate, async (req: any, res: any) => {
   try { sendSuccess(res, await getFuelEfficiency()); } catch (err) { sendError(res, err); }
 });
 
-router.get('/analytics/costs', authenticate, async (req, res) => {
+router.get('/analytics/costs', authenticate, async (req: any, res: any) => {
   try { sendSuccess(res, await getOperationalCosts()); } catch (err) { sendError(res, err); }
 });
 
-router.get('/analytics/roi', authenticate, async (req, res) => {
+router.get('/analytics/roi', authenticate, async (req: any, res: any) => {
   try { sendSuccess(res, await getVehicleROI()); } catch (err) { sendError(res, err); }
 });
 
-router.get('/analytics/monthly-revenue', authenticate, async (req, res) => {
+router.get('/analytics/monthly-revenue', authenticate, async (req: any, res: any) => {
   try { sendSuccess(res, await getMonthlyRevenue()); } catch (err) { sendError(res, err); }
 });
 
-router.get('/analytics/vehicle-status', authenticate, async (req, res) => {
+router.get('/analytics/vehicle-status', authenticate, async (req: any, res: any) => {
   try { sendSuccess(res, await getVehicleStatusBreakdown()); } catch (err) { sendError(res, err); }
 });
 
 // ── CSV Export ────────────────────────────────────────────────────────────────
-router.get('/export/csv', authenticate, async (req, res) => {
+router.get('/export/csv', authenticate, async (req: any, res: any) => {
   const type = req.query.type as string;
 
   try {
@@ -80,7 +80,7 @@ router.get('/export/csv', authenticate, async (req, res) => {
 });
 
 // ── PDF Export ────────────────────────────────────────────────────────────────
-router.get('/export/pdf', authenticate, async (req, res) => {
+router.get('/export/pdf', authenticate, async (req: any, res: any) => {
   try {
     const [kpis, roi, costs, fuelEfficiency] = await Promise.all([
       getKPIs(),

@@ -14,7 +14,7 @@ router.post(
     body('email').isEmail().withMessage('Valid email required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   ],
-  async (req, res) => {
+  async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return sendError(res, badRequest(errors.array()[0].msg));
@@ -39,7 +39,7 @@ router.post(
       .isNumeric()
       .withMessage('OTP must be a 6-digit code'),
   ],
-  async (req, res) => {
+  async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return sendError(res, badRequest(errors.array()[0].msg));
@@ -72,7 +72,7 @@ router.post('/logout', authenticate, (_req, res) => {
 });
 
 // ── GET /me ───────────────────────────────────────────────────────────────────
-router.get('/me', authenticate, async (req, res) => {
+router.get('/me', authenticate, async (req: any, res: any) => {
   try {
     const user = await getMe(req.user!.id);
     sendSuccess(res, user);
