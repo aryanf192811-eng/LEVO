@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useVehicleDetail } from '@/api/hooks/useVehicles'
 import { useAuthStore } from '@/store/authStore'
 import { ArrowLeft, Truck, Edit, AlertTriangle } from 'lucide-react'
-import { statusToBadge } from '@/lib/utils'
+import { statusToBadge, fmtDate } from '@/lib/utils'
 import { DetailSkeleton } from '@/components/common/LoadingSkeleton'
 
 const fmtNum = (n?: number) => n?.toLocaleString('en-IN') ?? '-'
@@ -138,9 +138,139 @@ export default function VehicleDetail() {
         ))}
       </div>
 
-      {/* TAB CONTENT (Stubbed as per instructions / simple tables) */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[300px] p-8 flex items-center justify-center text-slate-400">
-        <p>List component for {activeTab} pending implementation...</p>
+      {/* TAB CONTENT */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[300px] overflow-hidden">
+        {activeTab === 'trips' && (
+          vehicle.trips.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">No trips recorded yet.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4">ID</th>
+                    <th className="px-6 py-4">Route</th>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Driver</th>
+                    <th className="px-6 py-4 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {vehicle.trips.map(trip => (
+                    <tr key={trip.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 font-medium text-slate-900">#{trip.id}</td>
+                      <td className="px-6 py-4">{trip.source} → {trip.destination}</td>
+                      <td className="px-6 py-4 text-slate-500">{fmtDate(trip.createdAt)}</td>
+                      <td className="px-6 py-4">{trip.driver?.name || 'Unassigned'}</td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${statusToBadge(trip.status)}`}>
+                          {trip.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+
+        {activeTab === 'maintenance' && (
+          vehicle.maintenanceLogs.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">No maintenance logs found.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Description</th>
+                    <th className="px-6 py-4 text-right">Cost</th>
+                    <th className="px-6 py-4 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {vehicle.maintenanceLogs.map(log => (
+                    <tr key={log.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 text-slate-500">{fmtDate(log.openedAt)}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900">{log.type}</td>
+                      <td className="px-6 py-4 text-slate-500">{log.description}</td>
+                      <td className="px-6 py-4 text-right font-medium">{fmtCur(log.cost)}</td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tracking-wide ${
+                          log.status === 'CLOSED' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {log.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+
+        {activeTab === 'fuel' && (
+          vehicle.fuelLogs.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">No fuel logs found.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Odometer</th>
+                    <th className="px-6 py-4 text-right">Litres</th>
+                    <th className="px-6 py-4 text-right">Cost/Litre</th>
+                    <th className="px-6 py-4 text-right">Total Cost</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {vehicle.fuelLogs.map(log => (
+                    <tr key={log.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 text-slate-500">{fmtDate(log.date)}</td>
+                      <td className="px-6 py-4 text-slate-500">{fmtNum(log.odometerReading)} km</td>
+                      <td className="px-6 py-4 text-right font-medium">{log.litres.toFixed(1)} L</td>
+                      <td className="px-6 py-4 text-right text-slate-500">{fmtCur(log.costPerLitre)}</td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-900">{fmtCur(log.totalCost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+
+        {activeTab === 'expenses' && (
+          vehicle.expenses.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">No extra expenses recorded.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Description</th>
+                    <th className="px-6 py-4 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {vehicle.expenses.map(exp => (
+                    <tr key={exp.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 text-slate-500">{fmtDate(exp.date)}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900 capitalize">{exp.type.toLowerCase().replace('_', ' ')}</td>
+                      <td className="px-6 py-4 text-slate-500">{exp.description || '-'}</td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-900">{fmtCur(exp.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
       </div>
 
     </div>
